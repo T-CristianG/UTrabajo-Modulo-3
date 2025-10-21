@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 📱 General -->
+    <string name="app_name">UTrabajo</string>
+
+    <!-- 🔐 LOGIN -->
+    <string name="login_title">UT</string>
+    <string name="email_field">Correo electrónico *</string>
+    <string name="password_field">Contraseña *</string>
+    <string name="login_button">Iniciar sesión</string>
+
+    <!-- Compatibilidad: dos claves de loading por si tu código usa una u otra -->
+    <string name="login_loading">Iniciando sesión…</string>
+    <string name="loading_text">Iniciando sesión…</string>
+
+    <string name="company_login_button">Iniciar sesión - Empresa</string>
+    <string name="recover_password">Recuperar contraseña</string>
+    <string name="fill_all_fields_error">Por favor complete todos los campos</string>
+    <string name="uid_error">Error interno: UID no disponible.</string>
+    <string name="user_check_error">Error verificando usuario:</string>
+    <string name="company_check_error">Error verificando empresa:</string>
+
+    <!-- 🏢 REGISTRO EMPRESA -->
+    <string name="register_company_title">Registro de Empresa</string>
+    <string name="nit_field">NIT y Nombre de la empresa *</string>
+    <string name="phone_field">Número Telefónico de la empresa *</string>
+    <string name="company_email_field">Correo de la empresa *</string>
+    <string name="workers_field">Número de trabajadores *</string>
+    <string name="register_button">Siguiente</string>
+    <string name="register_loading">Registrando…</string>
+    <string name="invalid_email">Por favor ingrese un correo válido</string>
+    <string name="register_error_generic">Ocurrió un error al registrar la empresa</string>
+
+    <!-- 👔 REPRESENTANTE EMPRESA -->
+    <string name="company_rep_info_title">Información del representante</string>
+
+    <!-- ⚠️ ERRORES GENERALES -->
+    <string name="error_title_generic">Error</string>
+    <string name="error_all_fields_required">Por favor complete todos los campos</string>
+    <string name="error_invalid_email">Por favor ingrese un correo electrónico válido</string>
+    <string name="error_passwords_do_not_match">Las contraseñas no coinciden</string>
+    <string name="error_password_length">La contraseña debe tener al menos 8 caracteres</string>
+    <string name="error_password_requirements">La contraseña debe tener:\n• Una letra mayúscula\n• Un número\n• Un símbolo especial</string>
+
+    <!-- 🔑 CAMPOS DE FORMULARIO -->
+    <string name="full_name_field">Nombre Completo *</string>
+    <string name="confirm_password_field">Confirmar Contraseña *</string>
+    <string name="full_name_label">Nombre completo *</string>
+    <string name="email_label">Correo electrónico *</string>
+    <string name="password_label">Contraseña *</string>
+    <string name="confirm_password_label">Confirmar contraseña *</string>
+
+    <!-- 🧩 REQUISITOS DE CONTRASEÑA -->
+    <string name="password_requirements_title">Requisitos de contraseña</string>
+    <string name="password_req_length">• Mínimo 8 caracteres</string>
+    <string name="password_req_upper">• Al menos una letra mayúscula</string>
+    <string name="password_req_number">• Al menos un número</string>
+    <string name="password_req_symbol">• Al menos un símbolo (ej: !, @, #, $)</string>
+    <string name="password_mismatch">Las contraseñas no coinciden</string>
+    <string name="password_too_short">La contraseña debe tener al menos 8 caracteres</string>
+    <string name="password_requirements_failed">La contraseña debe tener:\n• Una letra mayúscula\n• Un número\n• Un símbolo especial</string>
+
+    <!-- ✅ MENSAJES DE ÉXITO -->
+    <string name="registration_success">✅ Registro exitoso! Redirigiendo...</string>
+    <string name="success_registration">✅ Registro exitoso. Redirigiendo...</string>
+    <string name="registration_error">Ocurrió un error al registrar el usuario</string>
+
+    <!-- 🔄 ESTADOS -->
+    <string name="registering">🔄 Registrando...</string>
+    <string name="continue_button">Continuar</string>
+
+</resources>
