@@ -14,8 +14,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tab.utrabajo.presentation.screens.*
+// 🔹 AGREGAR ESTE IMPORT:
+import com.tab.utrabajo.ui.company.CompanyHomeScreen
 
-// NavGraph con uso del innerPadding para evitar aviso "parameter innerPadding is not used"
+// ... el resto de tu código permanece igual ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavGraph() {
@@ -39,7 +41,6 @@ fun NavGraph() {
             }
         }
     ) { innerPadding ->
-        // Pasamos innerPadding al NavHost vía modifier para usarlo y evitar warning.
         NavHost(
             navController = navController,
             startDestination = Screen.Splash.route,
@@ -62,12 +63,11 @@ fun NavGraph() {
             composable(Screen.ResetPassword.route) { ResetPasswordScreen(navController) }
             composable(Screen.RecoverSuccess.route) { RecoverSuccessScreen(navController) }
 
-            // Nuevas rutas: Home y Perfil
-            // ...
-            composable(Screen.JobsList.route) { JobsListScreen(navController) }
-            composable(Screen.Profile.route) { ProfileScreen(navController) } // <- PASAMOS navController
-// ...
+            // ✅ Esto ahora funcionará porque tenemos el import correcto
+            composable(Screen.CompanyHome.route) { CompanyHomeScreen(navController) }
 
+            composable(Screen.JobsList.route) { JobsListScreen(navController) }
+            composable(Screen.Profile.route) { ProfileScreen(navController = navController) }
         }
     }
 }

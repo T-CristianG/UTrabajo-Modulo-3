@@ -90,6 +90,7 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(Modifier.height(20.dp))
 
+        // 🔹 Botón para login normal (usuarios)
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
@@ -120,21 +121,9 @@ fun LoginScreen(navController: NavHostController) {
                                             popUpTo(startId) { inclusive = true }
                                         }
                                     } else {
-                                        db.collection("empresas").document(uid).get()
-                                            .addOnSuccessListener { comp ->
-                                                if (comp.exists()) {
-                                                    navController.navigate(Screen.CompleteCompany.route) {
-                                                        popUpTo(startId) { inclusive = true }
-                                                    }
-                                                } else {
-                                                    navController.navigate(Screen.RoleSelection.route) {
-                                                        popUpTo(startId) { inclusive = true }
-                                                    }
-                                                }
-                                            }
-                                            .addOnFailureListener { e ->
-                                                errorMessage = "$companyCheckError ${e.message}"
-                                            }
+                                        navController.navigate(Screen.RoleSelection.route) {
+                                            popUpTo(startId) { inclusive = true }
+                                        }
                                     }
                                 }
                                 .addOnFailureListener { e ->
@@ -156,12 +145,55 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(Modifier.height(12.dp))
 
+        // 🔹 Botón para login de empresa
         Button(
-            onClick = { /* TODO: flujo de login para empresas */ },
+            onClick = {
+                if (email.isBlank() || password.isBlank()) {
+                    errorMessage = fillAllFieldsError
+                    return@Button
+                }
+
+                isLoading = true
+                errorMessage = null
+
+                FirebaseRepository.getInstance().loginUser(
+                    email = email.trim(),
+                    password = password,
+                    onSuccess = {
+                        isLoading = false
+                        val uid = FirebaseRepository.getInstance().getCurrentUser()?.uid
+
+                        if (uid == null) {
+                            errorMessage = uidError
+                        } else {
+                            val db = FirebaseFirestore.getInstance()
+                            val startId = navController.graph.startDestinationId
+
+                            db.collection("empresas").document(uid).get()
+                                .addOnSuccessListener { doc ->
+                                    if (doc.exists()) {
+                                        navController.navigate(Screen.CompanyHome.route) {
+                                            popUpTo(startId) { inclusive = true }
+                                        }
+                                    } else {
+                                        errorMessage = companyCheckError
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    errorMessage = "$companyCheckError ${e.message}"
+                                }
+                        }
+                    },
+                    onError = { error ->
+                        isLoading = false
+                        errorMessage = error
+                    }
+                )
+            },
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading
         ) {
-            Text(companyLoginButton)
+            if (isLoading) Text(loadingText) else Text(companyLoginButton)
         }
 
         Spacer(Modifier.height(12.dp))

@@ -21,5 +21,6 @@ sealed class Screen(val route: String) {
     // <-- Home y Perfil que añadimos:
     object JobsList : Screen("jobs_list")
     object Profile : Screen("profile")
+    object CompanyHome : Screen("company_home") // ✅ Agregada esta línea
 
 }

@@ -70,15 +70,14 @@
     <string name="registering">🔄 Registrando...</string>
     <string name="continue_button">Continuar</string>
 
-    <!-- 🏢 HOME EMPRESA -->
+    <!-- 🏠 HOME EMPRESA -->
     <string name="company_home_title">Panel de Empresa</string>
-    <string name="company_home_welcome">Bienvenido, %1$s 👋</string>
-    <string name="company_home_subtitle">Gestione su cuenta y sus vacantes desde aquí</string>
-    <string name="view_vacancies_button">Ver vacantes publicadas</string>
-    <string name="create_vacancy_button">Crear nueva vacante</string>
-    <string name="edit_profile_button">Editar perfil</string>
-    <string name="logout_button">Cerrar sesión</string>
-    <string name="loading_company_data">Cargando información de la empresa…</string>
+    <string name="company_home_welcome">Bienvenido, %1$s</string>
+    <string name="company_home_published_jobs">Ver ofertas publicadas</string>
+    <string name="company_home_create_offer">Crear nueva oferta</string>
+    <string name="company_home_profile">Perfil de la empresa</string>
+    <string name="company_home_logout">Cerrar sesión</string>
+
 
 
 </resources>

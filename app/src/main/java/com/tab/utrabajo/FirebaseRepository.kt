@@ -29,7 +29,7 @@ class FirebaseRepository private constructor() {
     fun getCurrentUser() = auth.currentUser
 
     // -------------------
-    // Registro, login, logout (tu código original)
+    // Registro, login, logout
     // -------------------
 
     fun registerStudent(
@@ -118,40 +118,59 @@ class FirebaseRepository private constructor() {
             }
     }
 
+    // 🔹 CORRECCIÓN PRINCIPAL: Cambiar docUri: Uri a docUri: Uri?
     fun saveCompanyRepresentative(
         userId: String,
         repName: String,
         docType: String,
         docNumber: String,
-        docUri: Uri,
+        docUri: Uri?, // Cambiado a nullable
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val docRef = storage.reference.child("empresas/$userId/representante/${UUID.randomUUID()}.pdf")
-        docRef.putFile(docUri)
-            .addOnSuccessListener {
-                docRef.downloadUrl.addOnSuccessListener { docUrl ->
-                    val data = hashMapOf<String, Any>(
-                        "representanteLegal" to repName,
-                        "tipoDocumento" to docType,
-                        "numeroDocumento" to docNumber,
-                        "documentoRepresentanteUrl" to docUrl.toString(),
-                        "ultimaActualizacion" to Timestamp.now()
-                    )
+        if (docUri != null) {
+            // Si hay documento, subirlo y luego guardar los datos
+            val docRef = storage.reference.child("empresas/$userId/representante/${UUID.randomUUID()}.pdf")
+            docRef.putFile(docUri)
+                .addOnSuccessListener {
+                    docRef.downloadUrl.addOnSuccessListener { docUrl ->
+                        val data = hashMapOf<String, Any>(
+                            "representanteLegal" to repName,
+                            "tipoDocumento" to docType,
+                            "numeroDocumento" to docNumber,
+                            "documentoRepresentanteUrl" to docUrl.toString(),
+                            "ultimaActualizacion" to Timestamp.now()
+                        )
 
-                    db.collection("empresas").document(userId)
-                        .update(data)
-                        .addOnSuccessListener { onSuccess() }
-                        .addOnFailureListener { e ->
-                            onError("Error guardando información del representante: ${e.message}")
-                        }
-                }.addOnFailureListener { e ->
-                    onError("Error obteniendo URL del documento: ${e.message}")
+                        db.collection("empresas").document(userId)
+                            .update(data)
+                            .addOnSuccessListener { onSuccess() }
+                            .addOnFailureListener { e ->
+                                onError("Error guardando información del representante: ${e.message}")
+                            }
+                    }.addOnFailureListener { e ->
+                        onError("Error obteniendo URL del documento: ${e.message}")
+                    }
                 }
-            }
-            .addOnFailureListener { e ->
-                onError("Error subiendo documento: ${e.message}")
-            }
+                .addOnFailureListener { e ->
+                    onError("Error subiendo documento: ${e.message}")
+                }
+        } else {
+            // Si no hay documento, guardar solo los datos básicos
+            val data = hashMapOf<String, Any>(
+                "representanteLegal" to repName,
+                "tipoDocumento" to docType,
+                "numeroDocumento" to docNumber,
+                "ultimaActualizacion" to Timestamp.now()
+            )
+
+            db.collection("empresas").document(userId)
+                .update(data)
+                .addOnSuccessListener { onSuccess() }
+                .addOnFailureListener { e ->
+                    onError("Error guardando información del representante: ${e.message}")
+                }
+        }
     }
 
     fun uploadCompanyDocuments(
@@ -294,13 +313,9 @@ class FirebaseRepository private constructor() {
     }
 
     // -------------------
-    // Nuevas funciones para perfil
+    // Funciones para perfil
     // -------------------
 
-    /**
-     * Leer perfil del usuario desde Firestore (colección "usuarios")
-     * Retorna un Map<String, Any?> (puede venir vacío)
-     */
     fun getUserProfile(
         userId: String,
         onSuccess: (Map<String, Any?>) -> Unit,
@@ -320,9 +335,6 @@ class FirebaseRepository private constructor() {
             }
     }
 
-    /**
-     * Actualizar teléfono y dirección (merge)
-     */
     fun updateUserProfile(
         userId: String,
         phone: String?,
@@ -341,10 +353,6 @@ class FirebaseRepository private constructor() {
             .addOnFailureListener { e -> onError(e.message ?: "Error actualizando perfil") }
     }
 
-    /**
-     * Subir avatar (imagen) y devolver URL, también actualizar Auth display photo si quieres.
-     * onSuccess(urlString)
-     */
     fun uploadAvatar(
         userId: String,
         imageUri: Uri,
@@ -356,7 +364,6 @@ class FirebaseRepository private constructor() {
             .addOnSuccessListener {
                 ref.downloadUrl.addOnSuccessListener { uri ->
                     val url = uri.toString()
-                    // Guardar url en Firestore y (opcional) en Auth
                     val data = hashMapOf<String, Any>(
                         "photoUrl" to url,
                         "ultimaActualizacion" to Timestamp.now()
@@ -364,13 +371,11 @@ class FirebaseRepository private constructor() {
                     db.collection("usuarios").document(userId)
                         .set(data, com.google.firebase.firestore.SetOptions.merge())
                         .addOnSuccessListener {
-                            // actualizar Auth photoURL si existe user
                             auth.currentUser?.let { user ->
                                 val profileUpdates = UserProfileChangeRequest.Builder()
                                     .setPhotoUri(uri)
                                     .build()
                                 user.updateProfile(profileUpdates).addOnCompleteListener {
-                                    // ignoramos resultado
                                     onSuccess(url)
                                 }
                             } ?: onSuccess(url)
@@ -385,9 +390,6 @@ class FirebaseRepository private constructor() {
             }
     }
 
-    /**
-     * Actualizar displayName y/o photoUrl en Auth y Firestore (merge)
-     */
     fun updateAuthProfileAndFirestore(
         userId: String,
         displayName: String?,
@@ -395,17 +397,12 @@ class FirebaseRepository private constructor() {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // actualizar Auth
         val user = auth.currentUser
         if (user != null) {
             val builder = UserProfileChangeRequest.Builder()
             displayName?.let { builder.setDisplayName(it) }
             photoUrl?.let { builder.setPhotoUri(Uri.parse(it)) }
             user.updateProfile(builder.build()).addOnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    // no fatal: seguimos y guardamos en Firestore (pero avisamos)
-                }
-                // guardar en Firestore
                 val data = hashMapOf<String, Any>()
                 displayName?.let { data["nombre"] = it }
                 photoUrl?.let { data["photoUrl"] = it }

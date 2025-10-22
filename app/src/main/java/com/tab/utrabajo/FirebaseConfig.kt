@@ -25,5 +25,7 @@ object FirebaseConfig {
             Log.e(TAG, "Error initializing Firebase", e)
             false
         }
+
     }
+
 }
