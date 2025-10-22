@@ -83,10 +83,11 @@ class FirebaseRepository private constructor() {
         phone: String,
         email: String,
         workers: String,
+        password: String, // Nuevo parámetro
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        auth.createUserWithEmailAndPassword(email, "tempPassword123")
+        auth.createUserWithEmailAndPassword(email, password) // Usar la contraseña real
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val user = task.result?.user
@@ -118,7 +119,7 @@ class FirebaseRepository private constructor() {
             }
     }
 
-    // 🔹 CORRECCIÓN PRINCIPAL: Cambiar docUri: Uri a docUri: Uri?
+    // 🔹 Documento de representante opcional
     fun saveCompanyRepresentative(
         userId: String,
         repName: String,
@@ -173,49 +174,83 @@ class FirebaseRepository private constructor() {
         }
     }
 
+    // 🔹 MODIFICACIÓN: Documentos opcionales para CompanyDocumentsUpload
     fun uploadCompanyDocuments(
         userId: String,
-        rutUri: Uri,
-        camaraComercioUri: Uri,
+        rutUri: Uri?,  // Cambiado a nullable
+        camaraComercioUri: Uri?,  // Cambiado a nullable
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val rutRef = storage.reference.child("empresas/$userId/documentos/rut_${UUID.randomUUID()}.pdf")
-        val camaraRef = storage.reference.child("empresas/$userId/documentos/camara_${UUID.randomUUID()}.pdf")
+        var rutUrl: String? = null
+        var camaraUrl: String? = null
+        var tasksCompleted = 0
+        val totalTasks = 2 // Siempre intentamos actualizar, aunque no haya archivos
 
-        rutRef.putFile(rutUri)
-            .addOnSuccessListener {
-                rutRef.downloadUrl.addOnSuccessListener { rutUrl ->
-                    camaraRef.putFile(camaraComercioUri)
-                        .addOnSuccessListener {
-                            camaraRef.downloadUrl.addOnSuccessListener { camaraUrl ->
-                                val data = hashMapOf<String, Any>(
-                                    "rutUrl" to rutUrl.toString(),
-                                    "camaraComercioUrl" to camaraUrl.toString(),
-                                    "completado" to true,
-                                    "ultimaActualizacion" to Timestamp.now()
-                                )
+        fun checkCompletion() {
+            tasksCompleted++
+            if (tasksCompleted == totalTasks) {
+                val data = hashMapOf<String, Any>()
 
-                                db.collection("empresas").document(userId)
-                                    .update(data)
-                                    .addOnSuccessListener { onSuccess() }
-                                    .addOnFailureListener { e ->
-                                        onError("Error guardando URLs de documentos: ${e.message}")
-                                    }
-                            }.addOnFailureListener { e ->
-                                onError("Error obteniendo URL de cámara de comercio: ${e.message}")
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            onError("Error subiendo cámara de comercio: ${e.message}")
-                        }
-                }.addOnFailureListener { e ->
-                    onError("Error obteniendo URL del RUT: ${e.message}")
+                // Solo agregamos las URLs si existen
+                rutUrl?.let { data["rutUrl"] = it }
+                camaraUrl?.let { data["camaraComercioUrl"] = it }
+
+                data["completado"] = true
+                data["ultimaActualizacion"] = Timestamp.now()
+
+                db.collection("empresas").document(userId)
+                    .update(data)
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { e ->
+                        onError("Error guardando información: ${e.message}")
+                    }
+            }
+        }
+
+        // Subir RUT si existe
+        if (rutUri != null) {
+            val rutRef = storage.reference.child("empresas/$userId/documentos/rut_${UUID.randomUUID()}.pdf")
+            rutRef.putFile(rutUri)
+                .addOnSuccessListener {
+                    rutRef.downloadUrl.addOnSuccessListener { url ->
+                        rutUrl = url.toString()
+                        checkCompletion()
+                    }.addOnFailureListener { e ->
+                        // Si falla la descarga de URL, continuamos sin RUT
+                        checkCompletion()
+                    }
                 }
-            }
-            .addOnFailureListener { e ->
-                onError("Error subiendo RUT: ${e.message}")
-            }
+                .addOnFailureListener { e ->
+                    // Si falla la subida, continuamos sin RUT
+                    checkCompletion()
+                }
+        } else {
+            tasksCompleted++
+            checkCompletion()
+        }
+
+        // Subir Cámara de Comercio si existe
+        if (camaraComercioUri != null) {
+            val camaraRef = storage.reference.child("empresas/$userId/documentos/camara_${UUID.randomUUID()}.pdf")
+            camaraRef.putFile(camaraComercioUri)
+                .addOnSuccessListener {
+                    camaraRef.downloadUrl.addOnSuccessListener { url ->
+                        camaraUrl = url.toString()
+                        checkCompletion()
+                    }.addOnFailureListener { e ->
+                        // Si falla la descarga de URL, continuamos sin cámara
+                        checkCompletion()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    // Si falla la subida, continuamos sin cámara
+                    checkCompletion()
+                }
+        } else {
+            tasksCompleted++
+            checkCompletion()
+        }
     }
 
     fun saveStudentWorkInfo(
