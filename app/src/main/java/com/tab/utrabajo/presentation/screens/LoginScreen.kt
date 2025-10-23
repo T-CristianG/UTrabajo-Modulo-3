@@ -27,7 +27,6 @@ fun LoginScreen(navController: NavHostController) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // 📖 Strings internacionalizados
-    val title = stringResource(R.string.login_title)
     val emailField = stringResource(R.string.email_field)
     val passwordField = stringResource(R.string.password_field)
     val loginButton = stringResource(R.string.login_button)
@@ -42,11 +41,18 @@ fun LoginScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp),
-        verticalArrangement = Arrangement.Top,
+            .padding(40.dp),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(8.dp))
+        // Logo UT
+        Text(
+            text = "UT",
+            fontSize = 64.sp,
+            color = Color(0xFF2F90D9),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 40.dp)
+        )
 
         // Mensaje de error (si existe)
         errorMessage?.let {
@@ -55,42 +61,37 @@ fun LoginScreen(navController: NavHostController) {
                 color = Color.Red,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp)
+                    .padding(bottom = 16.dp)
             )
         }
 
-        Text(
-            text = title,
-            fontSize = 48.sp,
-            color = Color(0xFF2F90D9),
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(Modifier.height(16.dp))
-
+        // Campo de nombre de usuario o correo
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(emailField) },
+            label = { Text("Nombre de usuario o correo") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            enabled = !isLoading
+            enabled = !isLoading,
+            shape = MaterialTheme.shapes.medium
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
+        // Campo de contraseña
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(passwordField) },
+            label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
-            enabled = !isLoading
+            enabled = !isLoading,
+            shape = MaterialTheme.shapes.medium
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
 
-        // 🔹 Botón para login normal (usuarios)
+        // Botón de Iniciar Sesión
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
@@ -137,20 +138,23 @@ fun LoginScreen(navController: NavHostController) {
                     }
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = !isLoading,
+            shape = MaterialTheme.shapes.medium
         ) {
-            if (isLoading) Text(loadingText) else Text(loginButton)
+            if (isLoading) Text(loadingText) else Text("Iniciar Sesión")
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(16.dp))
 
-        // 🔹 Botón para login de empresa
-        Button(
+        // Botón para login de empresa (mantenido pero con estilo secundario)
+        OutlinedButton(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
                     errorMessage = fillAllFieldsError
-                    return@Button
+                    return@OutlinedButton
                 }
 
                 isLoading = true
@@ -190,19 +194,24 @@ fun LoginScreen(navController: NavHostController) {
                     }
                 )
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            enabled = !isLoading,
+            shape = MaterialTheme.shapes.medium
         ) {
             if (isLoading) Text(loadingText) else Text(companyLoginButton)
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(24.dp))
 
+        // Enlace de recuperar contraseña
         TextButton(
             onClick = { navController.navigate(Screen.RecoverStart.route) },
-            enabled = !isLoading
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(recoverPassword, color = Color(0xFF2F90D9))
+            Text("Recuperar contraseña", color = Color(0xFF2F90D9))
         }
     }
 }
