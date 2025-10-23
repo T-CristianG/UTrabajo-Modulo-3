@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.*
@@ -13,10 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.navigation.Screen
 
 @Composable
@@ -29,7 +32,7 @@ fun CompleteCompanyScreen(navController: NavHostController) {
     ) {
         Spacer(Modifier.height(8.dp))
         Text(
-            "Completa tu Usuario",
+            stringResource(R.string.completecompany_title),
             modifier = Modifier.align(Alignment.CenterHorizontally),
             fontWeight = FontWeight.Medium,
             fontSize = 18.sp
@@ -45,7 +48,7 @@ fun CompleteCompanyScreen(navController: NavHostController) {
             ) {
                 Icon(
                     painter = painterResource(id = android.R.drawable.ic_menu_camera),
-                    contentDescription = "avatar"
+                    contentDescription = stringResource(R.string.completecompany_avatar_desc)
                 )
             }
         }
@@ -57,13 +60,36 @@ fun CompleteCompanyScreen(navController: NavHostController) {
         var email by remember { mutableStateOf("") }
         var workers by remember { mutableStateOf("") }
 
-        androidx.compose.material3.OutlinedTextField(value = nit, onValueChange = { nit = it }, modifier = Modifier.fillMaxWidth(), label = { Text("NIT y Nombre de la empresa") })
+        OutlinedTextField(
+            value = nit,
+            onValueChange = { nit = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.completecompany_label_nit)) }
+        )
         Spacer(Modifier.height(8.dp))
-        androidx.compose.material3.OutlinedTextField(value = phone, onValueChange = { phone = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Número Telefónico de la empresa") })
+
+        OutlinedTextField(
+            value = phone,
+            onValueChange = { phone = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.completecompany_label_phone)) }
+        )
         Spacer(Modifier.height(8.dp))
-        androidx.compose.material3.OutlinedTextField(value = email, onValueChange = { email = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Correo de la empresa") })
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.completecompany_label_email)) }
+        )
         Spacer(Modifier.height(8.dp))
-        androidx.compose.material3.OutlinedTextField(value = workers, onValueChange = { workers = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Número de trabajadores") })
+
+        OutlinedTextField(
+            value = workers,
+            onValueChange = { workers = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.completecompany_label_workers)) }
+        )
         Spacer(Modifier.height(20.dp))
 
         Button(
@@ -71,7 +97,7 @@ fun CompleteCompanyScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Siguiente")
+            Text(stringResource(R.string.completecompany_button_next))
         }
     }
 }

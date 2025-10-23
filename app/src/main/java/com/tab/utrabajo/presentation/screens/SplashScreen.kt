@@ -9,40 +9,53 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
 import com.tab.utrabajo.presentation.navigation.Screen
+import com.tab.utrabajo.R
 
 @Composable
 fun SplashScreen(navController: NavHostController) {
+    val appTitle = stringResource(R.string.splash_title)
+    val slogan = stringResource(R.string.splash_slogan)
+    val signInLabel = stringResource(R.string.splash_sign_in)
+    val registerLabel = stringResource(R.string.splash_register)
+
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF2F90D9)) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("UT", fontSize = 72.sp, color = Color.White, fontWeight = FontWeight.ExtraBold)
+            Text(appTitle, fontSize = 72.sp, color = Color.White, fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(8.dp))
-            Text("Tu futuro profesional comienza aquí.", color = Color.White)
+            Text(slogan, color = Color.White)
             Spacer(Modifier.height(80.dp))
             Button(
                 onClick = { navController.navigate(Screen.Login.route) },
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                modifier = Modifier.fillMaxWidth(0.6f).height(48.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text("Iniciar Sesión", color = Color(0xFF2F90D9))
+                Text(signInLabel, color = Color(0xFF2F90D9))
             }
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = { navController.navigate(Screen.RoleSelection.route) },
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                modifier = Modifier.fillMaxWidth(0.6f).height(40.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(40.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text("Registro", color = Color(0xFF2F90D9))
+                Text(registerLabel, color = Color(0xFF2F90D9))
             }
         }
     }

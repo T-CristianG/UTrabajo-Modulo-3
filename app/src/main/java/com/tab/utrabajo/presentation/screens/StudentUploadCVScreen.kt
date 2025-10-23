@@ -11,10 +11,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.tab.utrabajo.FirebaseRepository
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.components.SingleDocumentUploadField
 import com.tab.utrabajo.presentation.navigation.Screen
 
@@ -28,6 +30,17 @@ fun StudentUploadCVScreen(navController: NavHostController) {
         selectedFileUri.value = uri
     }
 
+    // Strings
+    val titleText = stringResource(R.string.studentupload_title)
+    val uploadFieldLabel = stringResource(R.string.studentupload_field_label)
+    val unauthenticatedError = stringResource(R.string.studentupload_error_unauthenticated)
+    val uploadingText = stringResource(R.string.studentupload_uploading)
+    val uploadButtonText = stringResource(R.string.studentupload_button_upload_and_finish)
+    val uploadButtonUploading = stringResource(R.string.studentupload_button_uploading)
+    val continueWithFileText = stringResource(R.string.studentupload_continue_with_file)
+    val continueWithoutFileText = stringResource(R.string.studentupload_continue_without_file)
+    val genericErrorFmt = stringResource(R.string.studentupload_error_fmt)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -38,7 +51,7 @@ fun StudentUploadCVScreen(navController: NavHostController) {
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Subir HV",
+            text = titleText,
             fontSize = 20.sp,
             color = Color(0xFF2F90D9)
         )
@@ -59,7 +72,7 @@ fun StudentUploadCVScreen(navController: NavHostController) {
         Spacer(Modifier.height(8.dp))
 
         SingleDocumentUploadField(
-            label = "Adjunte su hoja de vida (PDF) - Opcional",
+            label = uploadFieldLabel,
             selectedFileUri = selectedFileUri.value,
             onFileSelected = {
                 if (!isLoading) launcher.launch("application/pdf")
@@ -79,7 +92,7 @@ fun StudentUploadCVScreen(navController: NavHostController) {
 
                         val currentUserId = FirebaseRepository.getInstance().getCurrentUser()?.uid
                         if (currentUserId == null) {
-                            errorMessage = "Usuario no autenticado"
+                            errorMessage = unauthenticatedError
                             isLoading = false
                             return@Button
                         }
@@ -93,7 +106,8 @@ fun StudentUploadCVScreen(navController: NavHostController) {
                             },
                             onError = { error ->
                                 isLoading = false
-                                errorMessage = error
+                                val errText = error ?: ""
+                                errorMessage = String.format(genericErrorFmt, errText)
                             }
                         )
                     }
@@ -104,16 +118,16 @@ fun StudentUploadCVScreen(navController: NavHostController) {
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    Text("Subiendo...", color = Color.White)
+                    Text(uploadButtonUploading, color = Color.White)
                 } else {
-                    Text("Subir HV y Finalizar", color = Color.White)
+                    Text(uploadButtonText, color = Color.White)
                 }
             }
 
             Spacer(Modifier.height(16.dp))
         }
 
-        // Botón para continuar sin subir CV
+        // Botón para continuar sin subir CV (o continuar si hay archivo pero no querer subir)
         Button(
             onClick = {
                 navController.navigate(Screen.RegistrationComplete.route)
@@ -123,7 +137,7 @@ fun StudentUploadCVScreen(navController: NavHostController) {
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF666666))
         ) {
             Text(
-                text = if (selectedFileUri.value != null) "Continuar sin subir HV" else "Finalizar sin subir HV",
+                text = if (selectedFileUri.value != null) continueWithFileText else continueWithoutFileText,
                 color = Color.White
             )
         }

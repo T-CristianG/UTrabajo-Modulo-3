@@ -15,12 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.navigation.Screen
 
 @Composable
@@ -36,6 +38,28 @@ fun JobsListScreen(navController: NavHostController) {
         )
     }
 
+    // Recursos
+    val perfilLabel = stringResource(R.string.bottom_perfil_label)
+    val perfilDesc = stringResource(R.string.bottom_perfil_desc)
+
+    val chatLabel = stringResource(R.string.bottom_chat_label)
+    val chatDesc = stringResource(R.string.bottom_chat_desc)
+
+    val homeLabel = stringResource(R.string.bottom_home_label)
+    val homeDesc = stringResource(R.string.bottom_home_desc)
+
+    val notificationsLabel = stringResource(R.string.bottom_notifications_label)
+    val notificationsDesc = stringResource(R.string.bottom_notifications_desc)
+
+    val empleoLabel = stringResource(R.string.bottom_empleo_label)
+    val empleoDesc = stringResource(R.string.bottom_empleo_desc)
+
+    val headerTitle = stringResource(R.string.jobslist_header_title)
+    val headerSubtitle = stringResource(R.string.jobslist_header_subtitle)
+    val searchPlaceholder = stringResource(R.string.jobslist_search_placeholder)
+    val viewDetails = stringResource(R.string.jobslist_view_details)
+    val viewDetailsDesc = stringResource(R.string.jobslist_view_details_desc)
+
     Scaffold(
         bottomBar = {
             NavigationBar(
@@ -47,13 +71,13 @@ fun JobsListScreen(navController: NavHostController) {
                     icon = {
                         Icon(
                             Icons.Default.Person,
-                            contentDescription = "Perfil",
+                            contentDescription = perfilDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Perfil",
+                            perfilLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -66,13 +90,13 @@ fun JobsListScreen(navController: NavHostController) {
                     icon = {
                         Icon(
                             Icons.Default.Chat,
-                            contentDescription = "Chat",
+                            contentDescription = chatDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Chat",
+                            chatLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -80,18 +104,18 @@ fun JobsListScreen(navController: NavHostController) {
                     onClick = { /* TODO: Navegar a Chat */ }
                 )
 
-                // Hoger (Home)
+                // Home
                 NavigationBarItem(
                     icon = {
                         Icon(
                             Icons.Default.Home,
-                            contentDescription = "Hoger",
+                            contentDescription = homeDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Hoger",
+                            homeLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -104,13 +128,13 @@ fun JobsListScreen(navController: NavHostController) {
                     icon = {
                         Icon(
                             Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
+                            contentDescription = notificationsDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Notificaciones",
+                            notificationsLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -118,18 +142,18 @@ fun JobsListScreen(navController: NavHostController) {
                     onClick = { /* TODO: Navegar a Notificaciones */ }
                 )
 
-                // Empieo (Empleo)
+                // Empleo
                 NavigationBarItem(
                     icon = {
                         Icon(
                             Icons.Default.Work,
-                            contentDescription = "Empieo",
+                            contentDescription = empleoDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Empieo",
+                            empleoLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -152,7 +176,7 @@ fun JobsListScreen(navController: NavHostController) {
                     .padding(24.dp)
             ) {
                 Text(
-                    text = "Buscador",
+                    text = headerTitle,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
@@ -162,7 +186,7 @@ fun JobsListScreen(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Encuentra el trabajo de tus sueños",
+                    text = headerSubtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 14.sp,
                     color = Color.Gray
@@ -178,7 +202,7 @@ fun JobsListScreen(navController: NavHostController) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Buscar trabajos...") },
+                    placeholder = { Text(searchPlaceholder) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -198,7 +222,9 @@ fun JobsListScreen(navController: NavHostController) {
                     JobCardForList(
                         company = job.company,
                         position = job.position,
-                        onClick = { /* open detail */ }
+                        onClick = { /* open detail */ },
+                        viewDetails = viewDetails,
+                        viewDetailsDesc = viewDetailsDesc
                     )
                 }
             }
@@ -208,7 +234,13 @@ fun JobsListScreen(navController: NavHostController) {
 
 /* --- Nuevo JobCard con el diseño de la primera pantalla --- */
 @Composable
-private fun JobCardForList(company: String, position: String, onClick: () -> Unit) {
+private fun JobCardForList(
+    company: String,
+    position: String,
+    onClick: () -> Unit,
+    viewDetails: String,
+    viewDetailsDesc: String
+) {
     // se fija una altura uniforme para todos los cards
     val cardHeight = 95.dp
 
@@ -294,14 +326,14 @@ private fun JobCardForList(company: String, position: String, onClick: () -> Uni
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Ver detalles",
+                        contentDescription = viewDetailsDesc,
                         tint = Color(0xFF6D6D6D),
                         modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Ver detalles",
+                    text = viewDetails,
                     fontSize = 11.sp,
                     color = Color(0xFF6D6D6D),
                     textAlign = TextAlign.Center,

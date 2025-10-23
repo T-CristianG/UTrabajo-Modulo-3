@@ -1,5 +1,6 @@
 package com.tab.utrabajo.presentation.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
@@ -9,12 +10,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp // ¡AGREGAR ESTA IMPORTACIÓN!
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.navigation.Screen
-import android.widget.Toast
 
 @Composable
 fun ResetPasswordScreen(navController: NavHostController) {
@@ -22,12 +24,29 @@ fun ResetPasswordScreen(navController: NavHostController) {
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
+    // Strings
+    val titleText = stringResource(R.string.resetpw_title)
+    val newPasswordLabel = stringResource(R.string.resetpw_label_new)
+    val confirmPasswordLabel = stringResource(R.string.resetpw_label_confirm)
+    val pwRequirementsTitle = stringResource(R.string.resetpw_requirements_title)
+    val pwReq1 = stringResource(R.string.resetpw_req_1)
+    val pwReq2 = stringResource(R.string.resetpw_req_2)
+    val pwReq3 = stringResource(R.string.resetpw_req_3)
+    val pwReq4 = stringResource(R.string.resetpw_req_4)
+
+    val errorFill = stringResource(R.string.resetpw_error_fill)
+    val errorInvalid = stringResource(R.string.resetpw_error_invalid)
+    val errorMismatch = stringResource(R.string.resetpw_error_mismatch)
+    val successChanged = stringResource(R.string.resetpw_success_changed)
+    val nextButton = stringResource(R.string.resetpw_button_next)
+    val noteText = stringResource(R.string.resetpw_note_wait_period)
+
     // Función para validar la contraseña
     fun isPasswordValid(password: String): Boolean {
         if (password.length < 8) return false
         if (!password.any { it.isUpperCase() }) return false
         if (!password.any { it.isDigit() }) return false
-        if (!password.any { it in "!@#$%^&*()_+-=[]{}|;:',.<>?/" }) return false
+        if (!password.any { "!@#$%^&*()_+-=[]{}|;:',.<>?/".contains(it) }) return false
         return true
     }
 
@@ -38,62 +57,67 @@ fun ResetPasswordScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.Top
     ) {
         Spacer(Modifier.height(8.dp))
-        Text("Ingrese la nueva contraseña:", color = Color(0xFF2F90D9))
+        Text(titleText, color = Color(0xFF2F90D9))
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = newPassword,
             onValueChange = { newPassword = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Nueva contraseña") },
+            label = { Text(newPasswordLabel) },
             visualTransformation = PasswordVisualTransformation()
         )
 
         Spacer(Modifier.height(12.dp))
-        Text("Confirme la nueva contraseña", color = Color(0xFF2F90D9))
+        Text(confirmPasswordLabel, color = Color(0xFF2F90D9))
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Confirmar contraseña") },
+            label = { Text(confirmPasswordLabel) },
             visualTransformation = PasswordVisualTransformation()
         )
 
         Spacer(Modifier.height(12.dp))
-        Text("Requisitos de contraseña", color = Color(0xFF2F90D9))
+        Text(pwRequirementsTitle, color = Color(0xFF2F90D9))
         Spacer(Modifier.height(6.dp))
-        Text("• Mínimo 8 caracteres")
-        Text("• Al menos una letra mayúscula")
-        Text("• Al menos un número")
-        Text("• Al menos un símbolo (ej: !, @, #, $)")
+        Text(pwReq1)
+        Text(pwReq2)
+        Text(pwReq3)
+        Text(pwReq4)
 
         Spacer(Modifier.height(18.dp))
         Button(
             onClick = {
-                if (newPassword.isEmpty() || confirmPassword.isEmpty()) {
-                    Toast.makeText(context, "Por favor complete todos los campos", Toast.LENGTH_SHORT).show()
-                } else if (!isPasswordValid(newPassword)) {
-                    Toast.makeText(context, "La contraseña no cumple los requisitos", Toast.LENGTH_SHORT).show()
-                } else if (newPassword != confirmPassword) {
-                    Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
-                } else {
-                    // Aquí iría la lógica para cambiar la contraseña en tu backend
-                    Toast.makeText(context, "Contraseña cambiada exitosamente", Toast.LENGTH_SHORT).show()
-                    navController.navigate(Screen.RecoverSuccess.route)
+                when {
+                    newPassword.isEmpty() || confirmPassword.isEmpty() -> {
+                        Toast.makeText(context, errorFill, Toast.LENGTH_SHORT).show()
+                    }
+                    !isPasswordValid(newPassword) -> {
+                        Toast.makeText(context, errorInvalid, Toast.LENGTH_SHORT).show()
+                    }
+                    newPassword != confirmPassword -> {
+                        Toast.makeText(context, errorMismatch, Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        // Aquí iría la lógica para cambiar la contraseña en tu backend
+                        Toast.makeText(context, successChanged, Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.RecoverSuccess.route)
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Siguiente")
+            Text(nextButton)
         }
 
         Spacer(Modifier.height(24.dp))
         Text(
-            "Tenga en cuenta que, una vez restablecida la contraseña, deberá esperar un plazo de 1 mes para volver a restablecerla",
+            noteText,
             color = Color(0xFF2F90D9),
-            fontSize = 14.sp // Esta es la línea que estaba causando el error
+            fontSize = 14.sp
         )
     }
 }

@@ -17,18 +17,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.tab.utrabajo.R
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun EmpleoScreen(navController: NavHostController) {
     val jobsState = remember { mutableStateListOf<Job>() }
+
+    // Obtener recursos (antes de LaunchedEffect)
+    val sampleCompany = stringResource(R.string.empleo_sample_company)
+    val sampleTitle = stringResource(R.string.empleo_sample_title)
+    val datePattern = stringResource(R.string.empleo_date_pattern)
+    val createJobLabel = stringResource(R.string.empleo_create_job)
+    val backDesc = stringResource(R.string.empleo_back)
 
     LaunchedEffect(Unit) {
         if (jobsState.isEmpty()) {
@@ -37,9 +46,9 @@ fun EmpleoScreen(navController: NavHostController) {
                 jobsState.add(
                     Job(
                         id = idx.toLong(),
-                        company = "Microsoft",
-                        title = "Full Stack Developer",
-                        date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date()),
+                        company = sampleCompany,
+                        title = sampleTitle,
+                        date = SimpleDateFormat(datePattern, Locale.getDefault()).format(Date()),
                         status = status
                     )
                 )
@@ -65,7 +74,7 @@ fun EmpleoScreen(navController: NavHostController) {
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Atrás",
+                        contentDescription = backDesc,
                         tint = Color(0xFF2B7BBF)
                     )
                 }
@@ -81,7 +90,7 @@ fun EmpleoScreen(navController: NavHostController) {
                         .padding(horizontal = 22.dp, vertical = 8.dp)
                 ) {
                     Text(
-                        text = "Crear Empleo",
+                        text = createJobLabel,
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
@@ -99,7 +108,7 @@ fun EmpleoScreen(navController: NavHostController) {
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(items = jobsState, key = { it.id }) { job ->
-                    JobCard(job = job) { }
+                    JobCard(job = job) { /* manejar click si hace falta */ }
                 }
             }
         }
@@ -109,6 +118,10 @@ fun EmpleoScreen(navController: NavHostController) {
 @Composable
 private fun JobCard(job: Job, onClick: () -> Unit) {
     val cardHeight = 95.dp
+    val statusInProcess = stringResource(R.string.empleo_status_in_process)
+    val statusFinished = stringResource(R.string.empleo_status_finished)
+    val jobIconDesc = stringResource(R.string.empleo_icon_job)
+    val finishedIconDesc = stringResource(R.string.empleo_icon_finished)
 
     Card(
         modifier = Modifier
@@ -139,7 +152,7 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                 ) {
                     Icon(
                         imageVector = Icons.Default.Work,
-                        contentDescription = null,
+                        contentDescription = jobIconDesc,
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
@@ -189,14 +202,14 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.Work,
-                            contentDescription = "En Proceso",
+                            contentDescription = statusInProcess,
                             tint = Color(0xFF6D6D6D),
                             modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "En Proceso",
+                        text = statusInProcess,
                         fontSize = 11.sp,
                         color = Color(0xFF6D6D6D),
                         textAlign = TextAlign.Center,
@@ -213,14 +226,14 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Finalizado",
+                            contentDescription = finishedIconDesc,
                             tint = Color(0xFF000000),
                             modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Proceso finalizado",
+                        text = statusFinished,
                         fontSize = 11.sp,
                         color = Color(0xFF6D6D6D),
                         textAlign = TextAlign.Center,

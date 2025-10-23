@@ -11,10 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import com.tab.utrabajo.FirebaseRepository
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.components.SingleDocumentUploadField
 import com.tab.utrabajo.presentation.navigation.Screen
+import java.util.Locale
 
 @Composable
 fun CompanyRepresentativeScreen(navController: NavHostController) {
@@ -30,6 +33,19 @@ fun CompanyRepresentativeScreen(navController: NavHostController) {
     ) { uri: Uri? ->
         docUri = uri
     }
+
+    // Recursos de texto
+    val instruction = stringResource(R.string.companyrep_instruction)
+    val repNameLabel = stringResource(R.string.companyrep_label_name)
+    val docTypeLabel = stringResource(R.string.companyrep_label_type)
+    val docNumberLabel = stringResource(R.string.companyrep_label_number)
+    val uploadDocText = stringResource(R.string.companyrep_upload_text)
+    val uploadDocLabel = stringResource(R.string.companyrep_label_upload)
+    val validationError = stringResource(R.string.companyrep_error_fill_fields)
+    val companyNotRegistered = stringResource(R.string.companyrep_error_no_registered)
+    val savingText = stringResource(R.string.companyrep_saving)
+    val nextText = stringResource(R.string.companyrep_next)
+    val errorFmt = stringResource(R.string.companyrep_error_fmt)
 
     Column(
         modifier = Modifier
@@ -49,14 +65,14 @@ fun CompanyRepresentativeScreen(navController: NavHostController) {
             )
         }
 
-        Text("Nombre del representante legal.", color = Color(0xFF2F90D9))
+        Text(instruction, color = Color(0xFF2F90D9))
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = repName,
             onValueChange = { repName = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Nombre del representante legal *") },
+            label = { Text(repNameLabel) },
             enabled = !isLoading
         )
 
@@ -66,7 +82,7 @@ fun CompanyRepresentativeScreen(navController: NavHostController) {
             value = docType,
             onValueChange = { docType = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Tipo de documento *") },
+            label = { Text(docTypeLabel) },
             enabled = !isLoading
         )
 
@@ -76,16 +92,16 @@ fun CompanyRepresentativeScreen(navController: NavHostController) {
             value = docNumber,
             onValueChange = { docNumber = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Número de documento *") },
+            label = { Text(docNumberLabel) },
             enabled = !isLoading
         )
 
         Spacer(Modifier.height(12.dp))
-        Text("Suba copia del documento del representante legal (opcional).", color = Color(0xFF2F90D9))
+        Text(uploadDocText, color = Color(0xFF2F90D9))
         Spacer(Modifier.height(12.dp))
 
         SingleDocumentUploadField(
-            label = "Por favor, adjunte copia del documento (opcional)",
+            label = uploadDocLabel,
             selectedFileUri = docUri,
             onFileSelected = {
                 if (!isLoading) docLauncher.launch("application/pdf")
@@ -98,40 +114,42 @@ fun CompanyRepresentativeScreen(navController: NavHostController) {
             onClick = {
                 // Validaciones mínimas
                 if (repName.isBlank() || docType.isBlank() || docNumber.isBlank()) {
-                    errorMessage = "Por favor complete todos los campos obligatorios"
+                    errorMessage = validationError
                     return@Button
                 }
 
                 val currentUser = FirebaseRepository.getInstance().getCurrentUser()
                 if (currentUser == null) {
-                    errorMessage = "Empresa no registrada. Por favor, reinicie el proceso."
+                    errorMessage = companyNotRegistered
                     return@Button
                 }
 
                 isLoading = true
                 errorMessage = null
 
-                // <-- aquí pasamos docUri tal cual (puede ser null)
+                // <-- docUri puede ser null y se pasa tal cual
                 FirebaseRepository.getInstance().saveCompanyRepresentative(
                     userId = currentUser.uid,
                     repName = repName.trim(),
                     docType = docType.trim(),
                     docNumber = docNumber.trim(),
-                    docUri = docUri, // <- CORRECCIÓN: quitar el '-' y permitir null
+                    docUri = docUri,
                     onSuccess = {
                         isLoading = false
                         navController.navigate(Screen.CompanyDocsUpload.route)
                     },
                     onError = { error ->
                         isLoading = false
-                        errorMessage = error
+                        // Formateamos mensaje; si error es null usamos cadena vacía
+                        val errText = error ?: ""
+                        errorMessage = String.format(Locale.getDefault(), errorFmt, errText)
                     }
                 )
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = !isLoading
         ) {
-            if (isLoading) Text("Guardando...") else Text("Siguiente")
+            if (isLoading) Text(savingText) else Text(nextText)
         }
     }
 }

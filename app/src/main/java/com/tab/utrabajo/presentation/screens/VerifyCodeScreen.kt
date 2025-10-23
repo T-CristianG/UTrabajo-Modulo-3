@@ -1,5 +1,6 @@
 package com.tab.utrabajo.presentation.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,12 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.tab.utrabajo.presentation.navigation.Screen
-import android.widget.Toast
+import com.tab.utrabajo.R
 import kotlin.random.Random
 
 @Composable
@@ -33,20 +36,27 @@ fun VerifyCodeScreen(navController: NavHostController) {
     val context = LocalContext.current
     var code by remember { mutableStateOf("") }
     var generatedCode by remember { mutableStateOf(generateRandomCode()) }
-    var email by remember { mutableStateOf("usuario@ejemplo.com") } // Cambia por el email real
+    var email by remember { mutableStateOf("usuario@ejemplo.com") } // reemplaza por el email real si lo tienes
 
-    // Función para enviar el código (simulación)
+    // Strings
+    val instruction = stringResource(R.string.verifycode_instruction)
+    val labelCode = stringResource(R.string.verifycode_label)
+    val nextButton = stringResource(R.string.verifycode_button_next)
+    val resendButton = stringResource(R.string.verifycode_button_resend)
+    val sentFmt = stringResource(R.string.verifycode_sent_fmt) // formato: "Código enviado a %1$s: %2$s"
+    val incorrectCode = stringResource(R.string.verifycode_incorrect)
+    val codeLengthError = stringResource(R.string.verifycode_length_error)
+    val expireNote = stringResource(R.string.verifycode_expire_note)
+
+    // Función para "enviar" el código (simulado)
     fun sendVerificationCode() {
-        // En una app real, aquí iría la lógica para enviar el código al email
-        Toast.makeText(
-            context,
-            "Código enviado a $email: $generatedCode",
-            Toast.LENGTH_LONG
-        ).show()
+        // En app real aquí se llama al backend / servicio de email/SMS
+        val msg = String.format(sentFmt, email, generatedCode)
+        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
     }
 
     // Enviar código automáticamente al cargar la pantalla
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         sendVerificationCode()
     }
 
@@ -59,7 +69,7 @@ fun VerifyCodeScreen(navController: NavHostController) {
         Spacer(Modifier.height(8.dp))
 
         Text(
-            "Por favor, ingrese el código de 5 dígitos enviado al correo o teléfono de la cuenta asociada",
+            instruction,
             color = Color(0xFF2F90D9),
             fontSize = 16.sp
         )
@@ -72,7 +82,7 @@ fun VerifyCodeScreen(navController: NavHostController) {
                 code = new.filter { it.isDigit() }.take(5)
             },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Código (5 dígitos)") },
+            label = { Text(labelCode) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
@@ -84,15 +94,15 @@ fun VerifyCodeScreen(navController: NavHostController) {
                     if (code == generatedCode) {
                         navController.navigate(Screen.ResetPassword.route)
                     } else {
-                        Toast.makeText(context, "Código incorrecto", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, incorrectCode, Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "El código debe tener 5 dígitos", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, codeLengthError, Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Siguiente")
+            Text(nextButton)
         }
 
         Spacer(Modifier.height(12.dp))
@@ -104,20 +114,20 @@ fun VerifyCodeScreen(navController: NavHostController) {
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Reenviar código")
+            Text(resendButton)
         }
 
         Spacer(Modifier.height(12.dp))
 
         Text(
-            "Tenga en cuenta que el código tiene una duración de 2 minutos. En caso de necesitar otro código, haga clic en Reenviar código.",
+            expireNote,
             color = Color(0xFF2F90D9),
             fontSize = 14.sp
         )
     }
 }
 
-// Función para generar código aleatorio de 5 dígitos
+// Genera código aleatorio de 5 dígitos
 private fun generateRandomCode(): String {
     return Random.nextInt(10000, 99999).toString()
 }

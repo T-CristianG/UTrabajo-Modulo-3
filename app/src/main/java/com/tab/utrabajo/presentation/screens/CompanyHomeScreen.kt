@@ -11,16 +11,41 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.tab.utrabajo.R
 
 @Composable
 fun CompanyHomeScreen(navController: NavHostController) {
-    // Datos de ejemplo para candidatos (iguales a la imagen)
+    // Recursos de bottom bar / labels / descripciones
+    val perfilLabel = stringResource(R.string.bottom_perfil_label)
+    val perfilDesc = stringResource(R.string.bottom_perfil_desc)
+
+    val chatLabel = stringResource(R.string.bottom_chat_label)
+    val chatDesc = stringResource(R.string.bottom_chat_desc)
+
+    val homeLabel = stringResource(R.string.bottom_home_label) // "Hoger" según tu código original
+    val homeDesc = stringResource(R.string.bottom_home_desc)
+
+    val notificationsLabel = stringResource(R.string.bottom_notifications_label)
+    val notificationsDesc = stringResource(R.string.bottom_notifications_desc)
+
+    val empleoLabel = stringResource(R.string.bottom_empleo_label)
+    val empleoDesc = stringResource(R.string.bottom_empleo_desc)
+
+    // Header
+    val headerTitle = stringResource(R.string.company_header_title)
+    val headerSubtitle = stringResource(R.string.company_header_subtitle)
+
+    // Datos de ejemplo para candidatos
+    val sampleCandidateName = stringResource(R.string.company_sample_candidate_name)
+    val sampleCandidatePosition = stringResource(R.string.company_sample_candidate_position)
+
     val candidates = List(5) {
-        Candidate("Carlos Lopez", "Full Stack Developer")
+        Candidate(sampleCandidateName, sampleCandidatePosition)
     }
 
     Scaffold(
@@ -34,13 +59,13 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     icon = {
                         Icon(
                             Icons.Default.Person,
-                            contentDescription = "Perfil",
+                            contentDescription = perfilDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Perfil",
+                            perfilLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -53,13 +78,13 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     icon = {
                         Icon(
                             Icons.Default.Chat,
-                            contentDescription = "Chat",
+                            contentDescription = chatDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Chat",
+                            chatLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -72,13 +97,13 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     icon = {
                         Icon(
                             Icons.Default.Home,
-                            contentDescription = "Hoger",
+                            contentDescription = homeDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Hoger",
+                            homeLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -91,13 +116,13 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     icon = {
                         Icon(
                             Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
+                            contentDescription = notificationsDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Notificaciones",
+                            notificationsLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -105,18 +130,18 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     onClick = { /* TODO: Navegar a Notificaciones */ }
                 )
 
-                // Empieo (Empleo) -- CAMBIO: ahora navega a la ruta "empleo"
+                // Empieo (Empleo)
                 NavigationBarItem(
                     icon = {
                         Icon(
                             Icons.Default.Work,
-                            contentDescription = "Empieo",
+                            contentDescription = empleoDesc,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Empieo",
+                            empleoLabel,
                             fontSize = 12.sp
                         )
                     },
@@ -139,7 +164,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     .padding(24.dp)
             ) {
                 Text(
-                    text = "Buscador",
+                    text = headerTitle,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
@@ -149,7 +174,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Descubre candidatos interesados en crecer contigo",
+                    text = headerSubtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 14.sp,
                     color = Color.Gray

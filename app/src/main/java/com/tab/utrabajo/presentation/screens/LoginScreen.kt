@@ -26,7 +26,9 @@ fun LoginScreen(navController: NavHostController) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // 📖 Strings internacionalizados
+    // Strings internacionalizados
+    val logoText = stringResource(R.string.login_logo)
+    val sloganText = stringResource(R.string.login_slogan)
     val emailField = stringResource(R.string.email_field)
     val passwordField = stringResource(R.string.password_field)
     val loginButton = stringResource(R.string.login_button)
@@ -45,9 +47,9 @@ fun LoginScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo UT - Mismo estilo que SplashScreen
+        // Logo UT
         Text(
-            text = "UT",
+            text = logoText,
             fontSize = 72.sp,
             color = Color(0xFF2F90D9),
             fontWeight = FontWeight.ExtraBold,
@@ -55,7 +57,7 @@ fun LoginScreen(navController: NavHostController) {
         )
 
         Text(
-            text = "Tu futuro profesional comienza aquí.",
+            text = sloganText,
             color = Color.Gray,
             modifier = Modifier.padding(bottom = 60.dp)
         )
@@ -76,7 +78,7 @@ fun LoginScreen(navController: NavHostController) {
             value = email,
             onValueChange = { email = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Nombre de usuario o correo") },
+            label = { Text(emailField) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             enabled = !isLoading,
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
@@ -89,7 +91,7 @@ fun LoginScreen(navController: NavHostController) {
             value = password,
             onValueChange = { password = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Contraseña") },
+            label = { Text(passwordField) },
             visualTransformation = PasswordVisualTransformation(),
             enabled = !isLoading,
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
@@ -97,7 +99,7 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(Modifier.height(24.dp))
 
-        // Botón de Iniciar Sesión - Mismo estilo que SplashScreen
+        // Botón de Iniciar Sesión
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
@@ -153,12 +155,12 @@ fun LoginScreen(navController: NavHostController) {
                 containerColor = Color(0xFF2F90D9)
             )
         ) {
-            if (isLoading) Text(loadingText) else Text("Iniciar Sesión", color = Color.White)
+            if (isLoading) Text(loadingText) else Text(loginButton, color = Color.White)
         }
 
         Spacer(Modifier.height(12.dp))
 
-        // Botón para login de empresa - Mismo estilo que SplashScreen
+        // Botón para login de empresa
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
@@ -223,7 +225,7 @@ fun LoginScreen(navController: NavHostController) {
             enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Recuperar contraseña", color = Color(0xFF2F90D9))
+            Text(recoverPassword, color = Color(0xFF2F90D9))
         }
     }
 }

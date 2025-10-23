@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,6 +30,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.tab.utrabajo.FirebaseRepository
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.navigation.Screen
 import java.util.*
 
@@ -38,6 +40,54 @@ fun ProfileScreen(navController: NavHostController? = null) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
 
+    // Recursos de texto
+    val bottomPerfil = stringResource(R.string.bottom_perfil_label)
+    val bottomChat = stringResource(R.string.bottom_chat_label)
+    val bottomHome = stringResource(R.string.bottom_home_label)
+    val bottomNotifications = stringResource(R.string.bottom_notifications_label)
+    val bottomEmpleo = stringResource(R.string.bottom_empleo_label)
+
+    val profileTitle = stringResource(R.string.profile_title)
+    val avatarDesc = stringResource(R.string.profile_avatar_desc)
+    val avatarEditDesc = stringResource(R.string.profile_avatar_edit_desc)
+    val userNotAuthenticated = stringResource(R.string.profile_user_not_authenticated)
+
+    val nameNotDefined = stringResource(R.string.profile_name_not_defined)
+    val noPhone = stringResource(R.string.profile_no_phone)
+    val noAddress = stringResource(R.string.profile_no_address)
+
+    val labelPhone = stringResource(R.string.profile_label_phone)
+    val labelAddress = stringResource(R.string.profile_label_address)
+    val savePhoneDesc = stringResource(R.string.profile_save_phone_desc)
+    val saveAddressDesc = stringResource(R.string.profile_save_address_desc)
+
+    val editTelDesc = stringResource(R.string.profile_edit_phone_desc)
+    val editAddressDesc = stringResource(R.string.profile_edit_address_desc)
+    val editAllDesc = stringResource(R.string.profile_edit_all_desc)
+
+    val savingProfileText = stringResource(R.string.profile_saving)
+    val savedProfileText = stringResource(R.string.profile_saved)
+    val savedPhoneText = stringResource(R.string.profile_phone_saved)
+    val savedAddressText = stringResource(R.string.profile_address_saved)
+
+    val uploadAvatarText = stringResource(R.string.profile_uploading_avatar)
+    val avatarUpdatedText = stringResource(R.string.profile_avatar_updated)
+    val errorUploadAvatarFmt = stringResource(R.string.profile_error_upload_avatar_fmt)
+
+    val uploadingCvText = stringResource(R.string.profile_uploading_cv)
+    val cvUploadedText = stringResource(R.string.profile_cv_uploaded)
+    val errorUploadCvFmt = stringResource(R.string.profile_error_upload_cv_fmt)
+
+    val errorSavingFmt = stringResource(R.string.profile_error_saving_fmt)
+    val errorReadingProfileFmt = stringResource(R.string.profile_error_reading_fmt)
+
+    val buttonSaveLabel = stringResource(R.string.profile_button_save)
+    val buttonCancelLabel = stringResource(R.string.profile_button_cancel)
+    val buttonUploadCv = stringResource(R.string.profile_button_upload_cv)
+    val cvLoadedText = stringResource(R.string.profile_cv_loaded)
+    val cvNotLoadedText = stringResource(R.string.profile_cv_not_loaded)
+    val logoutLabel = stringResource(R.string.profile_button_logout)
+
     // Usuario actual (puede ser null)
     val currentUser = auth.currentUser
 
@@ -45,6 +95,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
     LaunchedEffect(currentUser) {
         if (currentUser == null) {
             navController?.let {
+                Toast.makeText(context, userNotAuthenticated, Toast.LENGTH_SHORT).show()
                 it.navigate(Screen.Login.route) {
                     popUpTo(Screen.Splash.route) { inclusive = true }
                 }
@@ -76,11 +127,11 @@ fun ProfileScreen(navController: NavHostController? = null) {
         if (uri == null) return@rememberLauncherForActivityResult
         val uid = currentUser?.uid
         if (uid == null) {
-            message = "Usuario no autenticado"
+            message = userNotAuthenticated
             return@rememberLauncherForActivityResult
         }
         isLoading = true
-        message = "Subiendo avatar..."
+        message = uploadAvatarText
         val ref = FirebaseStorage.getInstance().reference.child("users/$uid/avatar_${UUID.randomUUID()}.jpg")
         ref.putFile(uri)
             .addOnSuccessListener {
@@ -91,21 +142,24 @@ fun ProfileScreen(navController: NavHostController? = null) {
                         .set(mapOf("photoUrl" to avatarUrl), com.google.firebase.firestore.SetOptions.merge())
                         .addOnSuccessListener {
                             isLoading = false
-                            message = "Avatar actualizado"
-                            Toast.makeText(context, "Avatar actualizado", Toast.LENGTH_SHORT).show()
+                            message = avatarUpdatedText
+                            Toast.makeText(context, avatarUpdatedText, Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener { e ->
                             isLoading = false
-                            message = "Error guardando avatar: ${e.message}"
+                            val err = String.format(Locale.getDefault(), errorUploadAvatarFmt, e.message ?: "")
+                            message = err
                         }
                 }.addOnFailureListener { e ->
                     isLoading = false
-                    message = "Error obteniendo URL avatar: ${e.message}"
+                    val err = String.format(Locale.getDefault(), errorUploadAvatarFmt, e.message ?: "")
+                    message = err
                 }
             }
             .addOnFailureListener { e ->
                 isLoading = false
-                message = "Error subiendo avatar: ${e.message}"
+                val err = String.format(Locale.getDefault(), errorUploadAvatarFmt, e.message ?: "")
+                message = err
             }
     }
 
@@ -113,11 +167,11 @@ fun ProfileScreen(navController: NavHostController? = null) {
         if (uri == null) return@rememberLauncherForActivityResult
         val uid = currentUser?.uid
         if (uid == null) {
-            message = "Usuario no autenticado"
+            message = userNotAuthenticated
             return@rememberLauncherForActivityResult
         }
         isLoading = true
-        message = "Subiendo CV..."
+        message = uploadingCvText
         // Usa FirebaseRepository (ya implementado)
         FirebaseRepository.getInstance().uploadCV(
             fileUri = uri,
@@ -125,12 +179,13 @@ fun ProfileScreen(navController: NavHostController? = null) {
             onSuccess = { url ->
                 isLoading = false
                 cvUrl = url
-                message = "CV subido correctamente"
-                Toast.makeText(context, "CV subido", Toast.LENGTH_SHORT).show()
+                message = cvUploadedText
+                Toast.makeText(context, cvUploadedText, Toast.LENGTH_SHORT).show()
             },
             onError = { error ->
                 isLoading = false
-                message = "Error subiendo CV: $error"
+                val err = String.format(Locale.getDefault(), errorUploadCvFmt, error ?: "")
+                message = err
             }
         )
     }
@@ -139,7 +194,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
     fun saveProfile() {
         val uid = currentUser?.uid
         if (uid == null) {
-            message = "Usuario no autenticado"
+            message = userNotAuthenticated
             return
         }
         isLoading = true
@@ -153,13 +208,14 @@ fun ProfileScreen(navController: NavHostController? = null) {
             .set(updates, com.google.firebase.firestore.SetOptions.merge())
             .addOnSuccessListener {
                 isLoading = false
-                message = "Perfil actualizado"
+                message = savedProfileText
                 isEditing = false // Salir del modo edición después de guardar
-                Toast.makeText(context, "Perfil actualizado", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, savedProfileText, Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 isLoading = false
-                message = "Error guardando: ${e.message}"
+                val err = String.format(Locale.getDefault(), errorSavingFmt, e.message ?: "")
+                message = err
             }
     }
 
@@ -167,7 +223,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
     fun savePhone() {
         val uid = currentUser?.uid
         if (uid == null) {
-            message = "Usuario no autenticado"
+            message = userNotAuthenticated
             return
         }
         isLoading = true
@@ -176,12 +232,13 @@ fun ProfileScreen(navController: NavHostController? = null) {
             .addOnSuccessListener {
                 isLoading = false
                 isEditingPhone = false
-                message = "Teléfono actualizado"
-                Toast.makeText(context, "Teléfono actualizado", Toast.LENGTH_SHORT).show()
+                message = savedPhoneText
+                Toast.makeText(context, savedPhoneText, Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 isLoading = false
-                message = "Error guardando teléfono: ${e.message}"
+                val err = String.format(Locale.getDefault(), errorSavingFmt, e.message ?: "")
+                message = err
             }
     }
 
@@ -189,7 +246,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
     fun saveAddress() {
         val uid = currentUser?.uid
         if (uid == null) {
-            message = "Usuario no autenticado"
+            message = userNotAuthenticated
             return
         }
         isLoading = true
@@ -198,12 +255,13 @@ fun ProfileScreen(navController: NavHostController? = null) {
             .addOnSuccessListener {
                 isLoading = false
                 isEditingAddress = false
-                message = "Dirección actualizada"
-                Toast.makeText(context, "Dirección actualizada", Toast.LENGTH_SHORT).show()
+                message = savedAddressText
+                Toast.makeText(context, savedAddressText, Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 isLoading = false
-                message = "Error guardando dirección: ${e.message}"
+                val err = String.format(Locale.getDefault(), errorSavingFmt, e.message ?: "")
+                message = err
             }
     }
 
@@ -227,7 +285,8 @@ fun ProfileScreen(navController: NavHostController? = null) {
             }
             .addOnFailureListener { e ->
                 isLoading = false
-                message = "Error leyendo perfil: ${e.message}"
+                val err = String.format(Locale.getDefault(), errorReadingProfileFmt, e.message ?: "")
+                message = err
             }
     }
 
@@ -242,13 +301,13 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     icon = {
                         Icon(
                             Icons.Default.Person,
-                            contentDescription = "Perfil",
+                            contentDescription = bottomPerfil,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Perfil",
+                            bottomPerfil,
                             fontSize = 12.sp
                         )
                     },
@@ -261,13 +320,13 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     icon = {
                         Icon(
                             Icons.Default.Chat,
-                            contentDescription = "Chat",
+                            contentDescription = bottomChat,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Chat",
+                            bottomChat,
                             fontSize = 12.sp
                         )
                     },
@@ -275,18 +334,18 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     onClick = { /* TODO: Navegar a Chat */ }
                 )
 
-                // Hoger (Home)
+                // Home
                 NavigationBarItem(
                     icon = {
                         Icon(
                             Icons.Default.Home,
-                            contentDescription = "Hoger",
+                            contentDescription = bottomHome,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Hoger",
+                            bottomHome,
                             fontSize = 12.sp
                         )
                     },
@@ -299,13 +358,13 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     icon = {
                         Icon(
                             Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
+                            contentDescription = bottomNotifications,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Notificaciones",
+                            bottomNotifications,
                             fontSize = 12.sp
                         )
                     },
@@ -313,18 +372,18 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     onClick = { /* TODO: Navegar a Notificaciones */ }
                 )
 
-                // Empieo (Empleo)
+                // Empleo
                 NavigationBarItem(
                     icon = {
                         Icon(
                             Icons.Default.Work,
-                            contentDescription = "Empieo",
+                            contentDescription = bottomEmpleo,
                             modifier = Modifier.size(24.dp)
                         )
                     },
                     label = {
                         Text(
-                            "Empieo",
+                            bottomEmpleo,
                             fontSize = 12.sp
                         )
                     },
@@ -347,7 +406,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     .padding(24.dp)
             ) {
                 Text(
-                    text = "Mi Perfil",
+                    text = profileTitle,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
@@ -370,7 +429,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     if (!avatarUrl.isNullOrBlank()) {
                         Image(
                             painter = painterResource(id = android.R.drawable.sym_def_app_icon),
-                            contentDescription = "avatar",
+                            contentDescription = avatarDesc,
                             modifier = Modifier
                                 .size(120.dp)
                                 .clip(CircleShape)
@@ -387,7 +446,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                         ) {
                             Icon(
                                 Icons.Default.Person,
-                                contentDescription = "avatar icon",
+                                contentDescription = avatarDesc,
                                 tint = Color.Gray,
                                 modifier = Modifier.size(40.dp)
                             )
@@ -407,7 +466,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     ) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "editar avatar",
+                            contentDescription = avatarEditDesc,
                             tint = Color(0xFF2F90D9)
                         )
                     }
@@ -416,7 +475,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = if (displayName.isNotBlank()) displayName else "Nombre no definido",
+                    text = if (displayName.isNotBlank()) displayName else nameNotDefined,
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp
                 )
@@ -456,7 +515,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Default.Phone,
-                                    contentDescription = null,
+                                    contentDescription = savePhoneDesc,
                                     tint = Color(0xFF2F90D9)
                                 )
                                 Spacer(Modifier.width(12.dp))
@@ -468,30 +527,30 @@ fun ProfileScreen(navController: NavHostController? = null) {
                                                 value = phone,
                                                 onValueChange = { phone = it },
                                                 modifier = Modifier.weight(1f),
-                                                label = { Text("Teléfono") },
+                                                label = { Text(labelPhone) },
                                                 singleLine = true,
                                                 shape = RoundedCornerShape(12.dp)
                                             )
                                             Spacer(Modifier.width(8.dp))
                                             IconButton(onClick = { savePhone() }, enabled = !isLoading) {
-                                                Icon(Icons.Default.Check, contentDescription = "Guardar teléfono", tint = Color(0xFF2F90D9))
+                                                Icon(Icons.Default.Check, contentDescription = savePhoneDesc, tint = Color(0xFF2F90D9))
                                             }
                                             IconButton(onClick = {
                                                 // cancelar: revertir valor y salir
                                                 isEditingPhone = false
-                                                // recargar temporal (no había guardado otra variable previa), no hacemos revert profundo
+                                                phone = phoneTemp
                                             }, enabled = !isLoading) {
-                                                Icon(Icons.Default.Close, contentDescription = "Cancelar", tint = Color.Gray)
+                                                Icon(Icons.Default.Close, contentDescription = buttonCancelLabel, tint = Color.Gray)
                                             }
                                         }
                                     } else {
                                         Column {
                                             Text(
-                                                if (phone.isNotBlank()) phone else "Sin teléfono",
+                                                if (phone.isNotBlank()) phone else noPhone,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                if (address.isNotBlank()) address else "Sin dirección",
+                                                if (address.isNotBlank()) address else noAddress,
                                                 color = Color.Gray,
                                                 fontSize = 14.sp
                                             )
@@ -501,7 +560,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                             }
 
                             // Botones de editar:
-                            // Si NO estamos editando por campo, mostramos lápiz global (como antes)
                             Column(horizontalAlignment = Alignment.End) {
                                 if (!isEditingPhone && !isEditingAddress) {
                                     // Lápiz global (deja entrar al modo edición global)
@@ -511,7 +569,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                                     ) {
                                         Icon(
                                             Icons.Default.Edit,
-                                            contentDescription = "Editar teléfono y dirección",
+                                            contentDescription = editAllDesc,
                                             tint = Color(0xFF2F90D9)
                                         )
                                     }
@@ -519,7 +577,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                                 // Lápiz individual para teléfono
                                 IconButton(
                                     onClick = {
-                                        // Si entra a editar teléfono, asegura que address no esté en modo edición por campo
                                         phoneTemp = phone
                                         isEditingPhone = true
                                         isEditingAddress = false
@@ -529,7 +586,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                                 ) {
                                     Icon(
                                         Icons.Default.Edit,
-                                        contentDescription = "Editar teléfono",
+                                        contentDescription = editTelDesc,
                                         tint = Color(0xFF2F90D9)
                                     )
                                 }
@@ -546,7 +603,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                                 ) {
                                     Icon(
                                         Icons.Default.EditLocation,
-                                        contentDescription = "Editar dirección",
+                                        contentDescription = editAddressDesc,
                                         tint = Color(0xFF2F90D9)
                                     )
                                 }
@@ -561,18 +618,18 @@ fun ProfileScreen(navController: NavHostController? = null) {
                                     value = address,
                                     onValueChange = { address = it },
                                     modifier = Modifier.weight(1f),
-                                    label = { Text("Dirección") },
+                                    label = { Text(labelAddress) },
                                     shape = RoundedCornerShape(12.dp)
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 IconButton(onClick = { saveAddress() }, enabled = !isLoading) {
-                                    Icon(Icons.Default.Check, contentDescription = "Guardar dirección", tint = Color(0xFF2F90D9))
+                                    Icon(Icons.Default.Check, contentDescription = saveAddressDesc, tint = Color(0xFF2F90D9))
                                 }
                                 IconButton(onClick = {
                                     isEditingAddress = false
                                     address = addressTemp
                                 }, enabled = !isLoading) {
-                                    Icon(Icons.Default.Close, contentDescription = "Cancelar", tint = Color.Gray)
+                                    Icon(Icons.Default.Close, contentDescription = buttonCancelLabel, tint = Color.Gray)
                                 }
                             }
                         }
@@ -587,7 +644,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                         value = phone,
                         onValueChange = { phone = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Teléfono") },
+                        label = { Text(labelPhone) },
                         shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(Modifier.height(12.dp))
@@ -595,7 +652,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                         value = address,
                         onValueChange = { address = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Dirección") },
+                        label = { Text(labelAddress) },
                         shape = RoundedCornerShape(12.dp)
                     )
 
@@ -615,7 +672,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                             shape = RoundedCornerShape(24.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
                         ) {
-                            Text("Guardar", color = Color.White)
+                            Text(buttonSaveLabel, color = Color.White)
                         }
 
                         Spacer(Modifier.width(12.dp))
@@ -629,7 +686,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                             shape = RoundedCornerShape(24.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
                         ) {
-                            Text("Cancelar", color = Color.White)
+                            Text(buttonCancelLabel, color = Color.White)
                         }
                     }
 
@@ -644,16 +701,16 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
                 ) {
-                    Text("Subir Hoja de Vida", color = Color.White)
+                    Text(buttonUploadCv, color = Color.White)
                 }
 
                 Spacer(Modifier.height(16.dp))
 
                 // Estado del CV
                 if (cvUrl != null) {
-                    Text(text = "HV cargada correctamente", color = Color(0xFF2F90D9))
+                    Text(text = cvLoadedText, color = Color(0xFF2F90D9))
                 } else {
-                    Text(text = "No hay HV cargada", color = Color.Gray)
+                    Text(text = cvNotLoadedText, color = Color.Gray)
                 }
 
                 message?.let {
@@ -680,7 +737,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
                 ) {
-                    Text("Cerrar sesión", color = Color.White)
+                    Text(logoutLabel, color = Color.White)
                 }
 
                 Spacer(Modifier.height(24.dp))

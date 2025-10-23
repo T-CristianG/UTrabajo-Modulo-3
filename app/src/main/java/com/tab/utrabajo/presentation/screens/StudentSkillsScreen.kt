@@ -10,9 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavHostController
 import com.tab.utrabajo.FirebaseRepository
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.navigation.Screen
 
 @Composable
@@ -20,6 +23,15 @@ fun StudentSkillsScreen(navController: NavHostController) {
     val skills = remember { mutableStateListOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Strings
+    val title = stringResource(R.string.studentskills_title)
+    val addSkillLabel = stringResource(R.string.studentskills_add_skill)
+    val unauthenticatedError = stringResource(R.string.studentskills_error_unauthenticated)
+    val atLeastOneError = stringResource(R.string.studentskills_error_at_least_one)
+    val savingText = stringResource(R.string.studentskills_saving)
+    val continueText = stringResource(R.string.studentskills_continue)
+    val genericErrorFmt = stringResource(R.string.studentskills_error_fmt)
 
     Column(
         modifier = Modifier
@@ -39,9 +51,9 @@ fun StudentSkillsScreen(navController: NavHostController) {
         }
 
         Text(
-            "Habilidades",
+            title,
             color = Color(0xFF2F90D9),
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+            fontWeight = FontWeight.Medium
         )
         Spacer(Modifier.height(12.dp))
 
@@ -70,7 +82,7 @@ fun StudentSkillsScreen(navController: NavHostController) {
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9)),
             enabled = !isLoading
         ) {
-            Text("+ Añadir habilidad", color = Color.White)
+            Text(addSkillLabel, color = Color.White)
         }
 
         Spacer(Modifier.height(24.dp))
@@ -79,13 +91,13 @@ fun StudentSkillsScreen(navController: NavHostController) {
             onClick = {
                 val currentUser = FirebaseRepository.getInstance().getCurrentUser()
                 if (currentUser == null) {
-                    errorMessage = "Error: Usuario no autenticado"
+                    errorMessage = unauthenticatedError
                     return@Button
                 }
 
                 val habilidadesValidas = skills.filter { it.isNotBlank() }
                 if (habilidadesValidas.isEmpty()) {
-                    errorMessage = "Por favor ingrese al menos una habilidad"
+                    errorMessage = atLeastOneError
                     return@Button
                 }
 
@@ -101,7 +113,9 @@ fun StudentSkillsScreen(navController: NavHostController) {
                     },
                     onError = { error ->
                         isLoading = false
-                        errorMessage = "Error: $error"
+                        // formateamos el error con la string de recurso
+                        val errText = error ?: ""
+                        errorMessage = String.format(genericErrorFmt, errText)
                     }
                 )
             },
@@ -109,7 +123,7 @@ fun StudentSkillsScreen(navController: NavHostController) {
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
             enabled = !isLoading
         ) {
-            if (isLoading) Text("Guardando...") else Text("Continuar")
+            if (isLoading) Text(savingText) else Text(continueText)
         }
     }
 }

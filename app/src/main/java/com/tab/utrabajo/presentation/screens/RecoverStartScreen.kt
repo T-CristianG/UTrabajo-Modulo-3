@@ -9,12 +9,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.navigation.Screen
 
 @Composable
 fun RecoverStartScreen(navController: NavHostController) {
+    val instruction = stringResource(R.string.recover_instruction)
+    val identifierLabel = stringResource(R.string.recover_label_identifier)
+    val nextButton = stringResource(R.string.recover_button_next)
+    val noteText = stringResource(R.string.recover_note_wait_period)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -22,8 +29,9 @@ fun RecoverStartScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.Top
     ) {
         Spacer(Modifier.height(8.dp))
+
         Text(
-            "Ingrese el usuario o correo de la cuenta que desea recuperar.",
+            instruction,
             color = Color(0xFF2F90D9)
         )
         Spacer(Modifier.height(12.dp))
@@ -33,7 +41,7 @@ fun RecoverStartScreen(navController: NavHostController) {
             value = identifier,
             onValueChange = { identifier = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Usuario o correo") }
+            label = { Text(identifierLabel) }
         )
 
         Spacer(Modifier.height(16.dp))
@@ -41,12 +49,12 @@ fun RecoverStartScreen(navController: NavHostController) {
             onClick = { navController.navigate(Screen.VerifyCode.route) },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Siguiente")
+            Text(nextButton)
         }
 
         Spacer(Modifier.height(24.dp))
         Text(
-            "Tenga en cuenta que, una vez restablecida la contraseña, deberá esperar un plazo de 1 mes para volver a restablecerla",
+            noteText,
             color = Color(0xFF2F90D9)
         )
     }

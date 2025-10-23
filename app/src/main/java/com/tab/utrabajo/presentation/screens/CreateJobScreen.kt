@@ -7,9 +7,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.tab.utrabajo.FirebaseRepository
+import com.tab.utrabajo.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -18,9 +20,8 @@ fun CreateJobScreen(navController: NavController) {
     val repository = FirebaseRepository.getInstance()
     val currentUser = repository.getCurrentUser()
 
-    // Verificar usuario autenticado
     if (currentUser == null) {
-        Toast.makeText(context, "Error: No hay usuario autenticado", Toast.LENGTH_LONG).show()
+        Toast.makeText(context, context.getString(R.string.createjob_error_no_user), Toast.LENGTH_LONG).show()
         navController.navigate("company_home")
         return
     }
@@ -34,7 +35,7 @@ fun CreateJobScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Crear Nueva Oferta") })
+            TopAppBar(title = { Text(stringResource(R.string.createjob_title_topbar)) })
         }
     ) { padding ->
         Column(
@@ -47,14 +48,14 @@ fun CreateJobScreen(navController: NavController) {
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Título del puesto*") },
+                label = { Text(stringResource(R.string.createjob_label_title)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Descripción*") },
+                label = { Text(stringResource(R.string.createjob_label_description)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = false,
                 maxLines = 4
@@ -63,7 +64,7 @@ fun CreateJobScreen(navController: NavController) {
             OutlinedTextField(
                 value = requirements,
                 onValueChange = { requirements = it },
-                label = { Text("Requisitos (separados por coma)*") },
+                label = { Text(stringResource(R.string.createjob_label_requirements)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = false,
                 maxLines = 3
@@ -72,19 +73,19 @@ fun CreateJobScreen(navController: NavController) {
             OutlinedTextField(
                 value = salary,
                 onValueChange = { salary = it },
-                label = { Text("Salario*") },
+                label = { Text(stringResource(R.string.createjob_label_salary)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = location,
                 onValueChange = { location = it },
-                label = { Text("Ubicación*") },
+                label = { Text(stringResource(R.string.createjob_label_location)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Text(
-                text = "* Campos obligatorios",
+                text = stringResource(R.string.createjob_required_fields_note),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -92,13 +93,13 @@ fun CreateJobScreen(navController: NavController) {
             Button(
                 onClick = {
                     if (title.isBlank() || description.isBlank() || salary.isBlank() || location.isBlank() || requirements.isBlank()) {
-                        Toast.makeText(context, "Completa todos los campos obligatorios", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.createjob_toast_complete_fields), Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
                     isLoading = true
 
-                    // Convertir requisitos de string a lista
+
                     val requirementsList = requirements.split(",")
                         .map { it.trim() }
                         .filter { it.isNotBlank() }
@@ -112,12 +113,12 @@ fun CreateJobScreen(navController: NavController) {
                         location = location,
                         onSuccess = {
                             isLoading = false
-                            Toast.makeText(context, "Empleo creado exitosamente", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.createjob_toast_created), Toast.LENGTH_SHORT).show()
                             navController.navigate("job_created")
                         },
                         onError = { error ->
                             isLoading = false
-                            Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.createjob_error_fmt, error), Toast.LENGTH_LONG).show()
                         }
                     )
                 },
@@ -132,7 +133,7 @@ fun CreateJobScreen(navController: NavController) {
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Publicar Empleo")
+                    Text(stringResource(R.string.createjob_button_publish))
                 }
             }
         }
