@@ -26,19 +26,10 @@ import androidx.navigation.NavHostController
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * Pantalla Empleo — igual a la imagen: botón grande "Crear Empleo" arriba y
- * lista de tarjetas con logo a la izquierda y estado a la derecha.
- *
- * Copiar/pegar en tu proyecto. Usa Material3.
- */
-
 @Composable
 fun EmpleoScreen(navController: NavHostController) {
-    // lista en memoria (mutable). Puedes reemplazar por Room/DataStore luego.
     val jobsState = remember { mutableStateListOf<Job>() }
 
-    // precargar ejemplos (como en la imagen)
     LaunchedEffect(Unit) {
         if (jobsState.isEmpty()) {
             repeat(6) { idx ->
@@ -56,23 +47,18 @@ fun EmpleoScreen(navController: NavHostController) {
         }
     }
 
-    // dialog control para crear empleo con inputs
-    var showCreateDialog by remember { mutableStateOf(false) }
-
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(color = Color(0xFFE9F3F8)) // fondo celeste suave
+                .background(color = Color(0xFFE9F3F8))
         ) {
-            // Top: back arrow + botón "Crear Empleo" CENTRADO (overlay box)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 18.dp)
             ) {
-                // Back at start
                 IconButton(
                     onClick = { navController.popBackStack() },
                     modifier = Modifier.align(Alignment.CenterStart)
@@ -84,13 +70,14 @@ fun EmpleoScreen(navController: NavHostController) {
                     )
                 }
 
-                // Botón centrado absoluto
                 Box(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .shadow(6.dp, RoundedCornerShape(24.dp))
                         .background(Color(0xFF2B7BBF), shape = RoundedCornerShape(24.dp))
-                        .clickable { showCreateDialog = true }
+                        .clickable {
+                            navController.navigate("create_job")
+                        }
                         .padding(horizontal = 22.dp, vertical = 8.dp)
                 ) {
                     Text(
@@ -104,7 +91,6 @@ fun EmpleoScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Lista de empleos
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -113,102 +99,21 @@ fun EmpleoScreen(navController: NavHostController) {
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(items = jobsState, key = { it.id }) { job ->
-                    JobCard(job = job) { /* click */ }
+                    JobCard(job = job) { }
                 }
             }
         }
     }
-
-    // Dialog para crear empleo (titulo, empresa, ubicacion opcional, descripcion opcional)
-    if (showCreateDialog) {
-        CreateJobDialog(
-            onCancel = { showCreateDialog = false },
-            onCreate = { created ->
-                // insertar arriba y cerrar
-                jobsState.add(0, created)
-                showCreateDialog = false
-            }
-        )
-    }
 }
 
-@Composable
-private fun CreateJobDialog(onCancel: () -> Unit, onCreate: (Job) -> Unit) {
-    val tfTitle = remember { mutableStateOf("") }
-    val tfCompany = remember { mutableStateOf("") }
-    val tfLocation = remember { mutableStateOf("") }
-    val tfDesc = remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onCancel,
-        confirmButton = {
-            TextButton(onClick = {
-                val title = tfTitle.value.trim().ifEmpty { "Puesto" }
-                val company = tfCompany.value.trim().ifEmpty { "Empresa" }
-                val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-                val job = Job(
-                    id = System.currentTimeMillis(),
-                    company = company,
-                    title = title,
-                    date = date,
-                    status = JobStatus.IN_PROCESS
-                )
-                onCreate(job)
-            }) {
-                Text("Crear")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) { Text("Cancelar") }
-        },
-        title = { Text("Crear empleo") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = tfTitle.value,
-                    onValueChange = { tfTitle.value = it },
-                    label = { Text("Título") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = tfCompany.value,
-                    onValueChange = { tfCompany.value = it },
-                    label = { Text("Empresa") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = tfLocation.value,
-                    onValueChange = { tfLocation.value = it },
-                    label = { Text("Ubicación (opcional)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = tfDesc.value,
-                    onValueChange = { tfDesc.value = it },
-                    label = { Text("Descripción (opcional)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    )
-}
-
-/* --- JobCard --- */
 @Composable
 private fun JobCard(job: Job, onClick: () -> Unit) {
-    // se fija una altura uniforme para todos los cards
     val cardHeight = 95.dp
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(cardHeight) // <-- altura fija para uniformidad
+            .height(cardHeight)
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
@@ -220,7 +125,6 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                 .padding(vertical = 12.dp, horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Logo circular
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -244,7 +148,6 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            // Texto empresa + puesto (centrado verticalmente)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -269,10 +172,9 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                 )
             }
 
-            // Estado a la derecha - ancho fijo y centrado para alinear todos los iconos
             Column(
                 modifier = Modifier
-                    .width(120.dp) // ancho mayor para que "Proceso finalizado" quepa en 1 línea
+                    .width(120.dp)
                     .padding(start = 6.dp)
                     .fillMaxHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -289,7 +191,7 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                             imageVector = Icons.Default.Work,
                             contentDescription = "En Proceso",
                             tint = Color(0xFF6D6D6D),
-                            modifier = Modifier.size(20.dp) // uniform size
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
@@ -313,7 +215,7 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                             imageVector = Icons.Default.Check,
                             contentDescription = "Finalizado",
                             tint = Color(0xFF000000),
-                            modifier = Modifier.size(20.dp) // uniform size
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
@@ -323,7 +225,7 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
                         color = Color(0xFF6D6D6D),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1, // <-- fuerza una sola línea
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -332,7 +234,6 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
     }
 }
 
-/* --- Modelo --- */
 data class Job(
     val id: Long,
     val company: String,

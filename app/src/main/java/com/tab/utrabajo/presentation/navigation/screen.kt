@@ -22,5 +22,7 @@ sealed class Screen(val route: String) {
     object JobsList : Screen("jobs_list")
     object Profile : Screen("profile")
     object CompanyHome : Screen("company_home") // ✅ Agregada esta línea
+    object CreateJob : Screen("create_job")
+    object JobCreated : Screen("job_created")
 
 }

@@ -14,9 +14,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tab.utrabajo.presentation.screens.*
-
-import com.tab.utrabajo.presentation.screens.EmpleoScreen
-
 import com.tab.utrabajo.ui.company.CompanyHomeScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,14 +61,16 @@ fun NavGraph() {
             composable(Screen.ResetPassword.route) { ResetPasswordScreen(navController) }
             composable(Screen.RecoverSuccess.route) { RecoverSuccessScreen(navController) }
 
-
             composable(Screen.CompanyHome.route) { CompanyHomeScreen(navController) }
-
 
             composable("empleo") { EmpleoScreen(navController) }
 
             composable(Screen.JobsList.route) { JobsListScreen(navController) }
             composable(Screen.Profile.route) { ProfileScreen(navController = navController) }
+
+            // CORREGIDO: Rutas para crear empleo
+            composable("create_job") { CreateJobScreen(navController) }
+            composable("job_created") { JobCreatedScreen(navController) }
         }
     }
 }

@@ -452,4 +452,36 @@ class FirebaseRepository private constructor() {
             onError("Usuario no autenticado")
         }
     }
+    fun createJobOffer(
+        companyId: String,
+        title: String,
+        description: String,
+        requirements: List<String>,
+        salary: String?,
+        location: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val jobId = UUID.randomUUID().toString()
+
+        val data = hashMapOf(
+            "id" to jobId,
+            "empresaId" to companyId,
+            "titulo" to title,
+            "descripcion" to description,
+            "requisitos" to requirements,
+            "salario" to salary,
+            "ubicacion" to location,
+            "fechaPublicacion" to Timestamp.now(),
+            "activa" to true
+        )
+
+        db.collection("empleos").document(jobId)
+            .set(data)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Error al crear la oferta de empleo")
+            }
+    }
+
 }
