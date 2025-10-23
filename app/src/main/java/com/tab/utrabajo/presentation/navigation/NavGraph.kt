@@ -14,10 +14,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tab.utrabajo.presentation.screens.*
-// 🔹 AGREGAR ESTE IMPORT:
+
+import com.tab.utrabajo.presentation.screens.EmpleoScreen
+
 import com.tab.utrabajo.ui.company.CompanyHomeScreen
 
-// ... el resto de tu código permanece igual ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavGraph() {
@@ -63,8 +64,11 @@ fun NavGraph() {
             composable(Screen.ResetPassword.route) { ResetPasswordScreen(navController) }
             composable(Screen.RecoverSuccess.route) { RecoverSuccessScreen(navController) }
 
-            // ✅ Esto ahora funcionará porque tenemos el import correcto
+
             composable(Screen.CompanyHome.route) { CompanyHomeScreen(navController) }
+
+
+            composable("empleo") { EmpleoScreen(navController) }
 
             composable(Screen.JobsList.route) { JobsListScreen(navController) }
             composable(Screen.Profile.route) { ProfileScreen(navController = navController) }

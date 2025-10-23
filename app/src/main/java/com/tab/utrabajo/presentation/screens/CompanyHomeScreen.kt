@@ -105,7 +105,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     onClick = { /* TODO: Navegar a Notificaciones */ }
                 )
 
-                // Empieo (Empleo)
+                // Empieo (Empleo) -- CAMBIO: ahora navega a la ruta "empleo"
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -121,7 +121,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                         )
                     },
                     selected = false,
-                    onClick = { /* TODO: Navegar a Empleo */ }
+                    onClick = { navController.navigate("empleo") }
                 )
             }
         }
