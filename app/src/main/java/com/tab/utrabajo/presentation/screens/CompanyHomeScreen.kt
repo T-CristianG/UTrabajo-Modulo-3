@@ -1,93 +1,225 @@
 package com.tab.utrabajo.ui.company
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.tab.utrabajo.FirebaseRepository
-import com.tab.utrabajo.presentation.navigation.Screen
 
 @Composable
-fun CompanyHomeScreen(
-    navController: NavHostController // 🔹 CAMBIO: Agregar este parámetro
-) {
-    val repo = FirebaseRepository.getInstance()
-    val user = repo.getCurrentUser()
-    val uid = user?.uid
-    var companyData by remember { mutableStateOf<Map<String, Any?>>(emptyMap()) }
-    var loading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(uid) {
-        if (uid != null) {
-            val db = FirebaseRepository.getInstance()
-            db.getUserProfile(uid, onSuccess = {
-                companyData = it
-                loading = false
-            }, onError = {
-                loading = false
-            })
-        }
+fun CompanyHomeScreen(navController: NavHostController) {
+    // Datos de ejemplo para candidatos (iguales a la imagen)
+    val candidates = List(5) {
+        Candidate("Carlos Lopez", "Full Stack Developer")
     }
 
-    if (loading) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color.White,
+                modifier = Modifier.height(70.dp)
+            ) {
+                // Perfil
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Perfil",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Perfil",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { navController.navigate("profile") }
+                )
+
+                // Chat
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Chat,
+                            contentDescription = "Chat",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Chat",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { /* TODO: Navegar a Chat */ }
+                )
+
+                // Hoger (Home)
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Home,
+                            contentDescription = "Hoger",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Hoger",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = true,
+                    onClick = { }
+                )
+
+                // Notificaciones
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Notificaciones",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Notificaciones",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { /* TODO: Navegar a Notificaciones */ }
+                )
+
+                // Empieo (Empleo)
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Work,
+                            contentDescription = "Empieo",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Empieo",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { /* TODO: Navegar a Empleo */ }
+                )
+            }
         }
-    } else {
+    ) { innerPadding ->
         Column(
-            Modifier
+            modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding)
+                .background(Color.White)
         ) {
-            Text(
-                text = "Bienvenido, ${companyData["nombre"] ?: "Empresa"}",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Spacer(Modifier.height(16.dp))
-
-            Text("📧 Email: ${companyData["email"] ?: "-"}")
-            Text("🏢 NIT: ${companyData["nit"] ?: "-"}")
-            Text("📞 Teléfono: ${companyData["telefono"] ?: "-"}")
-
-            Spacer(Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    navController.navigate(Screen.CompanyDocsUpload.route)
-                },
-                modifier = Modifier.fillMaxWidth()
+            // Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
             ) {
-                Text("Subir documentos")
+                Text(
+                    text = "Buscador",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Descubre candidatos interesados en crecer contigo",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    navController.navigate(Screen.CompanyRepInfo.route)
-                },
-                modifier = Modifier.fillMaxWidth()
+            // Lista de candidatos
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
             ) {
-                Text("Representante legal")
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = {
-                    repo.logout()
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(0)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Cerrar sesión")
+                items(candidates) { candidate ->
+                    CandidateListItem(candidate = candidate)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }
 }
+
+@Composable
+fun CandidateListItem(candidate: Candidate) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar o icono (puedes reemplazar con imagen real)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color.LightGray, shape = androidx.compose.foundation.shape.CircleShape)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Información del candidato
+            Column {
+                Text(
+                    text = candidate.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+                Text(
+                    text = candidate.position,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+data class Candidate(
+    val name: String,
+    val position: String
+)
