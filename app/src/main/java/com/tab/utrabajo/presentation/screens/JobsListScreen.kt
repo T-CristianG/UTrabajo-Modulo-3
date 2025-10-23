@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,9 +19,7 @@ import androidx.navigation.NavHostController
 import com.tab.utrabajo.presentation.navigation.Screen
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.border
 
 @Composable
 fun JobsListScreen(navController: NavHostController) {
@@ -36,63 +36,225 @@ fun JobsListScreen(navController: NavHostController) {
 
     Scaffold(
         bottomBar = {
-            CustomBottomNavigationBar(
-                onProfileClick = { navController.navigate(Screen.Profile.route) },
-                onJobsClick = { /* stay */ },
-                onChatClick = { /* chat */ },
-                onHomeClick = { /* home */ },
-                onNotificationsClick = { /* notifications */ }
-            )
+            NavigationBar(
+                containerColor = Color.White,
+                modifier = Modifier.height(70.dp)
+            ) {
+                // Perfil
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Perfil",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Perfil",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { navController.navigate(Screen.Profile.route) }
+                )
+
+                // Chat
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Chat,
+                            contentDescription = "Chat",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Chat",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { /* TODO: Navegar a Chat */ }
+                )
+
+                // Hoger (Home)
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Home,
+                            contentDescription = "Hoger",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Hoger",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { navController.popBackStack() }
+                )
+
+                // Notificaciones
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Notificaciones",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Notificaciones",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = false,
+                    onClick = { /* TODO: Navegar a Notificaciones */ }
+                )
+
+                // Empieo (Empleo)
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            Icons.Default.Work,
+                            contentDescription = "Empieo",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            "Empieo",
+                            fontSize = 12.sp
+                        )
+                    },
+                    selected = true,
+                    onClick = { }
+                )
+            }
         }
     ) { innerPadding ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .padding(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Color.White)
         ) {
-            // Título Buscador
-            Text(
-                text = "Buscador",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Start
-            )
+            // Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                Text(
+                    text = "Buscador",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Encuentra el trabajo de tus sueños",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
+
+            // Barra de búsqueda
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text("Buscar trabajos...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // buscador
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text("Buscar trabajos...") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                "Encuentra el trabajo de tus sueños",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Start
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Lista de trabajos
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
             ) {
                 items(items.size) { idx ->
-                    JobItem(
+                    JobListItem(
                         company = items[idx].company,
                         position = items[idx].position,
-                        isChecked = items[idx].isChecked,
                         onClick = { /* open detail */ }
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun JobListItem(company: String, position: String, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Logo/icono de la empresa (círculo con la primera letra)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color.LightGray, shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = company.first().toString(),
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    fontSize = 16.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Información del trabajo
+            Column {
+                Text(
+                    text = company,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+                Text(
+                    text = position,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
             }
         }
     }
@@ -103,187 +265,3 @@ data class JobItemData(
     val position: String,
     val isChecked: Boolean
 )
-
-@Composable
-fun JobItem(company: String, position: String, isChecked: Boolean, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Checkbox
-            Checkbox(
-                checked = isChecked,
-                onCheckedChange = null,
-                modifier = Modifier.size(24.dp)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Logo/icono de la empresa
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(Color(0xFFEAF4FB), shape = CircleShape)
-                    .border(1.dp, Color(0xFFBBDEFB), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = company.first().toString(),
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1976D2)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Información del trabajo
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    company,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    position,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun CustomBottomNavigationBar(
-    onProfileClick: () -> Unit,
-    onJobsClick: () -> Unit,
-    onChatClick: () -> Unit,
-    onHomeClick: () -> Unit,
-    onNotificationsClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .background(Color.White)
-            .padding(horizontal = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Perfil
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clickable { onProfileClick() },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                painter = painterResource(id = android.R.drawable.ic_menu_myplaces),
-                contentDescription = "Perfil",
-                modifier = Modifier.size(24.dp),
-                tint = Color.Gray
-            )
-            Text(
-                "Perfil",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        // Hogar - Centrado
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clickable { onHomeClick() },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                painter = painterResource(id = android.R.drawable.ic_menu_view),
-                contentDescription = "Hogar",
-                modifier = Modifier.size(24.dp),
-                tint = Color(0xFF1976D2) // Azul para indicar selección
-            )
-            Text(
-                "Hogar",
-                fontSize = 12.sp,
-                color = Color(0xFF1976D2), // Azul para indicar selección
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        // Chat
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clickable { onChatClick() },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                painter = painterResource(id = android.R.drawable.ic_dialog_email),
-                contentDescription = "Chat",
-                modifier = Modifier.size(24.dp),
-                tint = Color.Gray
-            )
-            Text(
-                "Chat",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-        }
-
-        // Notificaciones
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clickable { onNotificationsClick() },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                painter = painterResource(id = android.R.drawable.ic_popup_reminder),
-                contentDescription = "Notificaciones",
-                modifier = Modifier.size(24.dp),
-                tint = Color.Gray
-            )
-            Text(
-                "Notificaciones",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                maxLines = 1
-            )
-        }
-
-        // Empleo
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clickable { onJobsClick() },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                painter = painterResource(id = android.R.drawable.ic_menu_edit),
-                contentDescription = "Empleo",
-                modifier = Modifier.size(24.dp),
-                tint = Color.Gray
-            )
-            Text(
-                "Empleo",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
