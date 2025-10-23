@@ -45,13 +45,19 @@ fun LoginScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo UT
+        // Logo UT - Mismo estilo que SplashScreen
         Text(
             text = "UT",
-            fontSize = 64.sp,
+            fontSize = 72.sp,
             color = Color(0xFF2F90D9),
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 40.dp)
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Text(
+            text = "Tu futuro profesional comienza aquí.",
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 60.dp)
         )
 
         // Mensaje de error (si existe)
@@ -73,7 +79,7 @@ fun LoginScreen(navController: NavHostController) {
             label = { Text("Nombre de usuario o correo") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             enabled = !isLoading,
-            shape = MaterialTheme.shapes.medium
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
         )
 
         Spacer(Modifier.height(16.dp))
@@ -86,12 +92,12 @@ fun LoginScreen(navController: NavHostController) {
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             enabled = !isLoading,
-            shape = MaterialTheme.shapes.medium
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
         )
 
         Spacer(Modifier.height(24.dp))
 
-        // Botón de Iniciar Sesión
+        // Botón de Iniciar Sesión - Mismo estilo que SplashScreen
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
@@ -140,21 +146,24 @@ fun LoginScreen(navController: NavHostController) {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(48.dp),
             enabled = !isLoading,
-            shape = MaterialTheme.shapes.medium
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF2F90D9)
+            )
         ) {
-            if (isLoading) Text(loadingText) else Text("Iniciar Sesión")
+            if (isLoading) Text(loadingText) else Text("Iniciar Sesión", color = Color.White)
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
-        // Botón para login de empresa (mantenido pero con estilo secundario)
-        OutlinedButton(
+        // Botón para login de empresa - Mismo estilo que SplashScreen
+        Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
                     errorMessage = fillAllFieldsError
-                    return@OutlinedButton
+                    return@Button
                 }
 
                 isLoading = true
@@ -196,11 +205,14 @@ fun LoginScreen(navController: NavHostController) {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(48.dp),
             enabled = !isLoading,
-            shape = MaterialTheme.shapes.medium
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF2F90D9)
+            )
         ) {
-            if (isLoading) Text(loadingText) else Text(companyLoginButton)
+            if (isLoading) Text(loadingText) else Text(companyLoginButton, color = Color.White)
         }
 
         Spacer(Modifier.height(24.dp))
