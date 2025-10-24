@@ -5,6 +5,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
 import java.util.UUID
 
@@ -452,6 +453,11 @@ class FirebaseRepository private constructor() {
             onError("Usuario no autenticado")
         }
     }
+
+    // -------------------
+    // Funciones para empleos
+    // -------------------
+
     fun createJobOffer(
         companyId: String,
         title: String,
@@ -484,4 +490,42 @@ class FirebaseRepository private constructor() {
             }
     }
 
+    /**
+     * Petición one-time para obtener empleos activos (no vinculante).
+     */
+    fun getActiveJobOffers(
+        onSuccess: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("empleos")
+            .whereEqualTo("activa", true)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                val jobs = querySnapshot.documents.mapNotNull { it.data }
+                onSuccess(jobs)
+            }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Error al cargar empleos")
+            }
+    }
+
+    /**
+     * Listener en tiempo real para empleos activos.
+     * Devuelve ListenerRegistration para poder remover el listener cuando se deseé.
+     */
+    fun listenToActiveJobOffers(
+        onUpdate: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ): ListenerRegistration {
+        return db.collection("empleos")
+            .whereEqualTo("activa", true)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    onError(e.message ?: "Error al escuchar empleos")
+                    return@addSnapshotListener
+                }
+                val jobs = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+                onUpdate(jobs)
+            }
+    }
 }
