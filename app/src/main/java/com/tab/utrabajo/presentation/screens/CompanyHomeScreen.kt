@@ -21,11 +21,12 @@ import androidx.navigation.NavHostController
 import com.tab.utrabajo.R
 import com.tab.utrabajo.FirebaseRepository
 
-// Data class para ofertas de trabajo
+// Data class para ofertas de trabajo (ahora incluye description)
 data class JobOffer(
     val id: String = "",
     val title: String = "",
-    val salary: String = ""
+    val salary: String = "",
+    val description: String = ""
 )
 
 @Composable
@@ -60,9 +61,9 @@ fun CompanyHomeScreen(navController: NavHostController) {
 
     // Datos de ejemplo para fallback (se mantuvieron)
     val sampleOffers = listOf(
-        JobOffer("1", "Desarrollador Android", "$3,000,000"),
-        JobOffer("2", "Diseñador UX/UI", "$2,500,000"),
-        JobOffer("3", "Analista de Datos", "$3,200,000")
+        JobOffer("1", "Desarrollador Android", "$3,000,000", "Desarrollador con experiencia en Kotlin y Jetpack Compose."),
+        JobOffer("2", "Diseñador UX/UI", "$2,500,000", "Diseño de producto, Figma, prototipos."),
+        JobOffer("3", "Analista de Datos", "$3,200,000", "SQL, Python, visualización de datos.")
     )
 
     // Escucha en tiempo real a Firestore para empleos activos
@@ -73,10 +74,12 @@ fun CompanyHomeScreen(navController: NavHostController) {
                 val idVal = item["id"] as? String
                 val titleVal = item["titulo"] as? String ?: item["title"] as? String
                 val salaryVal = item["salario"] as? String ?: item["salary"] as? String
+                val descriptionVal = item["descripcion"] as? String ?: item["description"] as? String ?: ""
                 JobOffer(
                     id = idVal ?: (item["documentId"] as? String ?: index.toString()),
                     title = titleVal ?: "",
-                    salary = salaryVal ?: ""
+                    salary = salaryVal ?: "",
+                    description = descriptionVal
                 )
             }
             jobOffers = mapped
@@ -277,11 +280,13 @@ fun CompanyHomeScreen(navController: NavHostController) {
                 if (editingJob != null) {
                     // Actualizar oferta existente en Firestore
                     if (jobOffer.id.isNotBlank()) {
+                        // Nota: updateJobOffer del repo actualiza título y salario (dependiendo de tu repo).
                         repo.updateJobOffer(jobOffer.id, title = jobOffer.title, salary = jobOffer.salary, onSuccess = {
                             Toast.makeText(context, "Oferta actualizada", Toast.LENGTH_SHORT).show()
                         }, onError = { err ->
                             Toast.makeText(context, "Error al actualizar: $err", Toast.LENGTH_LONG).show()
                         })
+                        // Si tu repo no actualiza descripción, hay que agregar esa lógica en FirebaseRepository.
                     } else {
                         Toast.makeText(context, "ID inválido para actualización", Toast.LENGTH_LONG).show()
                     }
@@ -291,7 +296,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     repo.createJobOffer(
                         companyId = companyId,
                         title = jobOffer.title,
-                        description = "",
+                        description = jobOffer.description,
                         requirements = emptyList(),
                         salary = jobOffer.salary,
                         location = "",
@@ -322,7 +327,7 @@ fun JobOfferListItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp),
+            .height(IntrinsicSize.Min),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
@@ -332,9 +337,9 @@ fun JobOfferListItem(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             // Avatar o icono - MANTENIDO IGUAL
             Box(
@@ -345,9 +350,10 @@ fun JobOfferListItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Información de la oferta - MANTENIENDO LA MISMA ESTRUCTURA
+            // Información de la oferta - mostramos título, descripción y salario
             Column(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
             ) {
                 Text(
                     text = offer.title,
@@ -356,16 +362,37 @@ fun JobOfferListItem(
                     fontSize = 16.sp,
                     color = Color.Black
                 )
-                Text(
-                    text = offer.salary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Descripción (puede ocupar varias líneas)
+                if (offer.description.isNotBlank()) {
+                    Text(
+                        text = offer.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 13.sp,
+                        color = Color.DarkGray,
+                        maxLines = 3
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                // Salario al final (valor)
+                if (offer.salary.isNotBlank()) {
+                    Text(
+                        text = offer.salary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
             }
 
             // Botones de acción
-            Row {
+            Row(
+                verticalAlignment = Alignment.Top
+            ) {
                 IconButton(
                     onClick = onEdit
                 ) {
@@ -398,6 +425,7 @@ fun JobOfferDialog(
 ) {
     var title by remember { mutableStateOf(jobOffer?.title ?: "") }
     var salary by remember { mutableStateOf(jobOffer?.salary ?: "") }
+    var description by remember { mutableStateOf(jobOffer?.description ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -419,6 +447,15 @@ fun JobOfferDialog(
                 )
 
                 OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descripción") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                )
+
+                OutlinedTextField(
                     value = salary,
                     onValueChange = { salary = it },
                     label = { Text("Salario") },
@@ -432,7 +469,8 @@ fun JobOfferDialog(
                     val updatedJobOffer = JobOffer(
                         id = jobOffer?.id ?: "",
                         title = title,
-                        salary = salary
+                        salary = salary,
+                        description = description
                     )
                     onSave(updatedJobOffer)
                 }

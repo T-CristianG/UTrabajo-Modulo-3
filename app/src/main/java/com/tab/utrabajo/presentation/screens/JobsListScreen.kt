@@ -20,11 +20,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavHostController
 import com.google.firebase.firestore.ListenerRegistration
 import com.tab.utrabajo.R
 import com.tab.utrabajo.FirebaseRepository
 import com.tab.utrabajo.presentation.navigation.Screen
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 
 @Composable
 fun JobsListScreen(navController: NavHostController) {
@@ -60,25 +68,33 @@ fun JobsListScreen(navController: NavHostController) {
     DisposableEffect(Unit) {
         val listener: ListenerRegistration = firebaseRepo.listenToActiveJobOffers(
             onUpdate = { jobs ->
-                // Mapear los documentos a JobItemData - SOLO NOMBRE DEL CARGO Y SALARIO
+                // Mapear los documentos a JobItemData - AHORA INCLUYE DESCRIPCION
                 val mapped = jobs.map { doc ->
-                    // Obtener título del puesto - SOLO ESTE DATO
+                    // Obtener título del puesto
                     val position = (
                             doc["titulo"]
                                 ?: doc["title"]
                                 ?: "Sin título"
                             ).toString()
 
-                    // Obtener salario - SOLO ESTE DATO
+                    // Obtener salario
                     val salary = (
                             doc["salario"]
                                 ?: doc["salary"]
                                 ?: "Salario no especificado"
                             ).toString()
 
+                    // Obtener descripción (si existe)
+                    val description = (
+                            doc["descripcion"]
+                                ?: doc["description"]
+                                ?: ""
+                            ).toString()
+
                     JobItemData(
                         position = position,
                         salary = salary,
+                        description = description,
                         isChecked = false
                     )
                 }
@@ -259,7 +275,7 @@ fun JobsListScreen(navController: NavHostController) {
                     CircularProgressIndicator(color = Color(0xFF2B7BBF))
                 }
             } else {
-                // Filtrar por query
+                // Filtrar por query (ahora también podrías filtrar por descripción si quieres)
                 val filtered = jobList.filter {
                     it.position.contains(query, ignoreCase = true) ||
                             it.salary.contains(query, ignoreCase = true)
@@ -293,7 +309,8 @@ fun JobsListScreen(navController: NavHostController) {
                             JobCardForList(
                                 position = job.position,
                                 salary = job.salary,
-                                onClick = { /* open detail */ },
+                                description = job.description, // ahora pasamos la descripción
+                                onClick = { /* mantenemos posible navegación si la necesitas */ },
                                 viewDetails = viewDetails,
                                 viewDetailsDesc = viewDetailsDesc
                             )
@@ -309,17 +326,26 @@ fun JobsListScreen(navController: NavHostController) {
 private fun JobCardForList(
     position: String,
     salary: String,
+    description: String,
     onClick: () -> Unit,
     viewDetails: String,
     viewDetailsDesc: String
 ) {
     val cardHeight = 110.dp
+    var showDescriptionDialog by remember { mutableStateOf(false) }
+    var animateToExpanded by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(cardHeight)
-            .clickable { onClick() },
+            .clickable {
+                // Ejecutamos el callback externo y además mostramos el diálogo con la descripción
+                onClick()
+                // abrir dialogo (inicia animación)
+                showDescriptionDialog = true
+            },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
@@ -354,7 +380,7 @@ private fun JobCardForList(
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            // SOLO CARGO Y SALARIO - SIN EMPRESA NI ID
+            // SOLO CARGO Y SALARIO - SIN EMPRESA NI ID (seguimos igual)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -366,7 +392,7 @@ private fun JobCardForList(
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                     color = Color(0xFF1E88E5),
-                    maxLines = 2, // Permitir 2 líneas para el cargo
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(8.dp)) // Más espacio entre cargo y salario
@@ -415,10 +441,125 @@ private fun JobCardForList(
             }
         }
     }
+
+    // Diálogo personalizado que "se expande" desde el tamaño de la tarjeta
+    if (showDescriptionDialog) {
+        // Control de animación: primero aparece el Dialog (con tamaño inicial),
+        // luego activamos animateToExpanded para expandir altura/scale.
+        LaunchedEffect(Unit) {
+            animateToExpanded = false
+            // pequeña pausa para que compose monte el Dialog y luego anime
+            delay(10)
+            animateToExpanded = true
+        }
+
+        // animaciones: altura y escala
+        val targetHeight = if (animateToExpanded) 380.dp else cardHeight
+        val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 380))
+        val scaleTarget = if (animateToExpanded) 1f else 0.96f
+        val animatedScale by animateFloatAsState(targetValue = scaleTarget, animationSpec = tween(durationMillis = 380))
+
+        Dialog(onDismissRequest = {
+            // al cerrar, invertimos la animación para que "encoga"
+            coroutineScope.launch {
+                animateToExpanded = false
+                // dejamos tiempo a la animación de encoger
+                delay(200)
+                showDescriptionDialog = false
+            }
+        }) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .height(animatedHeight)
+                    .graphicsLayer {
+                        scaleX = animatedScale
+                        scaleY = animatedScale
+                    },
+                shape = RoundedCornerShape(16.dp),
+                tonalElevation = 6.dp,
+                color = Color.White
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(18.dp)
+                ) {
+                    // Header del dialogo (título del puesto y un icono de cerrar arriba a la derecha)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = position,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1E88E5),
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = {
+                            // cerrar con animación usando coroutineScope
+                            coroutineScope.launch {
+                                animateToExpanded = false
+                                delay(180)
+                                showDescriptionDialog = false
+                            }
+                        }) {
+                            Icon(imageVector = Icons.Default.Close, contentDescription = "Cerrar")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Contenido: descripción (puede ser multilinea)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(top = 6.dp)
+                    ) {
+                        Text(
+                            text = "Descripción",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (description.isNotBlank()) description else "Descripción no disponible",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.DarkGray
+                        )
+                    }
+
+                    // Pie con salario y botón (manteniendo diseño simple)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = salary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF2E7D32),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Button(onClick = { /* si quieres acción adicional */ }) {
+                            Text(text = "Aplicar")
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 data class JobItemData(
     val position: String,
     val salary: String,
+    val description: String,
     val isChecked: Boolean
 )
