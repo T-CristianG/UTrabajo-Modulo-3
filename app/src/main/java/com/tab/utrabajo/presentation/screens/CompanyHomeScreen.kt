@@ -18,8 +18,20 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.tab.utrabajo.R
 
+// Data class para ofertas de trabajo
+data class JobOffer(
+    val id: String = "",
+    val title: String = "",
+    val salary: String = ""
+)
+
 @Composable
 fun CompanyHomeScreen(navController: NavHostController) {
+    // Datos de ejemplo - SIMULACIÓN sin Firebase
+    var jobOffers by remember { mutableStateOf<List<JobOffer>>(emptyList()) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var editingJob by remember { mutableStateOf<JobOffer?>(null) }
+
     // Recursos de bottom bar / labels / descripciones
     val perfilLabel = stringResource(R.string.bottom_perfil_label)
     val perfilDesc = stringResource(R.string.bottom_perfil_desc)
@@ -27,7 +39,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
     val chatLabel = stringResource(R.string.bottom_chat_label)
     val chatDesc = stringResource(R.string.bottom_chat_desc)
 
-    val homeLabel = stringResource(R.string.bottom_home_label) // "Hoger" según tu código original
+    val homeLabel = stringResource(R.string.bottom_home_label)
     val homeDesc = stringResource(R.string.bottom_home_desc)
 
     val notificationsLabel = stringResource(R.string.bottom_notifications_label)
@@ -40,15 +52,27 @@ fun CompanyHomeScreen(navController: NavHostController) {
     val headerTitle = stringResource(R.string.company_header_title)
     val headerSubtitle = stringResource(R.string.company_header_subtitle)
 
-    // Datos de ejemplo para candidatos
-    val sampleCandidateName = stringResource(R.string.company_sample_candidate_name)
-    val sampleCandidatePosition = stringResource(R.string.company_sample_candidate_position)
+    // Datos de ejemplo para ofertas
+    val sampleOffers = listOf(
+        JobOffer("1", "Desarrollador Android", "$3,000,000"),
+        JobOffer("2", "Diseñador UX/UI", "$2,500,000"),
+        JobOffer("3", "Analista de Datos", "$3,200,000")
+    )
 
-    val candidates = List(5) {
-        Candidate(sampleCandidateName, sampleCandidatePosition)
+    // Inicializar con datos de ejemplo
+    LaunchedEffect(Unit) {
+        jobOffers = sampleOffers
     }
 
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = Color(0xFF2B7BBF)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Agregar oferta")
+            }
+        },
         bottomBar = {
             NavigationBar(
                 containerColor = Color.White,
@@ -92,7 +116,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     onClick = { /* TODO: Navegar a Chat */ }
                 )
 
-                // Hoger (Home)
+                // Home
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -130,7 +154,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                     onClick = { /* TODO: Navegar a Notificaciones */ }
                 )
 
-                // Empieo (Empleo)
+                // Empleo
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -157,7 +181,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                 .padding(innerPadding)
                 .background(Color.White)
         ) {
-            // Header
+            // Header - EXACTAMENTE IGUAL
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,23 +205,63 @@ fun CompanyHomeScreen(navController: NavHostController) {
                 )
             }
 
-            // Lista de candidatos
+            // Lista de ofertas de trabajo
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                items(candidates) { candidate ->
-                    CandidateListItem(candidate = candidate)
+                items(jobOffers) { offer ->
+                    JobOfferListItem(
+                        offer = offer,
+                        onEdit = { editingJob = offer },
+                        onDelete = {
+                            jobOffers = jobOffers.filter { it.id != offer.id }
+                        }
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
     }
+
+    // Diálogo para agregar/editar oferta
+    if (showAddDialog || editingJob != null) {
+        JobOfferDialog(
+            jobOffer = editingJob,
+            onDismiss = {
+                showAddDialog = false
+                editingJob = null
+            },
+            onSave = { jobOffer ->
+                if (editingJob != null) {
+                    // Actualizar oferta existente
+                    jobOffers = jobOffers.map {
+                        if (it.id == jobOffer.id) jobOffer else it
+                    }
+                } else {
+                    // Crear nueva oferta
+                    val newOffer = JobOffer(
+                        id = (jobOffers.size + 1).toString(),
+                        title = jobOffer.title,
+                        salary = jobOffer.salary
+                    )
+                    jobOffers = jobOffers + newOffer
+                }
+                showAddDialog = false
+                editingJob = null
+            }
+        )
+    }
 }
 
 @Composable
-fun CandidateListItem(candidate: Candidate) {
+fun JobOfferListItem(
+    offer: JobOffer,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    // MANTENIENDO EXACTAMENTE EL MISMO DISEÑO que CandidateListItem
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -215,7 +279,7 @@ fun CandidateListItem(candidate: Candidate) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar o icono (puedes reemplazar con imagen real)
+            // Avatar o icono - MANTENIDO IGUAL
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -224,27 +288,105 @@ fun CandidateListItem(candidate: Candidate) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Información del candidato
-            Column {
+            // Información de la oferta - MANTENIENDO LA MISMA ESTRUCTURA
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
-                    text = candidate.name,
+                    text = offer.title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp,
                     color = Color.Black
                 )
                 Text(
-                    text = candidate.position,
+                    text = offer.salary,
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
             }
+
+            // Botones de acción
+            Row {
+                IconButton(
+                    onClick = onEdit
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Editar oferta",
+                        tint = Color(0xFF2B7BBF)
+                    )
+                }
+
+                IconButton(
+                    onClick = onDelete
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Eliminar oferta",
+                        tint = Color(0xFFD32F2F)
+                    )
+                }
+            }
         }
     }
 }
 
-data class Candidate(
-    val name: String,
-    val position: String
-)
+@Composable
+fun JobOfferDialog(
+    jobOffer: JobOffer?,
+    onDismiss: () -> Unit,
+    onSave: (JobOffer) -> Unit
+) {
+    var title by remember { mutableStateOf(jobOffer?.title ?: "") }
+    var salary by remember { mutableStateOf(jobOffer?.salary ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(if (jobOffer != null) "Editar Oferta" else "Nueva Oferta")
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Título del puesto") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = salary,
+                    onValueChange = { salary = it },
+                    label = { Text("Salario") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val updatedJobOffer = JobOffer(
+                        id = jobOffer?.id ?: "",
+                        title = title,
+                        salary = salary
+                    )
+                    onSave(updatedJobOffer)
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
