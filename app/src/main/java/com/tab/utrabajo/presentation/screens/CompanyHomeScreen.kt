@@ -1,5 +1,6 @@
 package com.tab.utrabajo.ui.company
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,12 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.tab.utrabajo.R
+import com.tab.utrabajo.FirebaseRepository
 
 // Data class para ofertas de trabajo
 data class JobOffer(
@@ -27,10 +30,13 @@ data class JobOffer(
 
 @Composable
 fun CompanyHomeScreen(navController: NavHostController) {
-    // Datos de ejemplo - SIMULACIÓN sin Firebase
+    // Datos de ejemplo - se usarán sólo si no hay conexión inicial
     var jobOffers by remember { mutableStateOf<List<JobOffer>>(emptyList()) }
     var showAddDialog by remember { mutableStateOf(false) }
     var editingJob by remember { mutableStateOf<JobOffer?>(null) }
+
+    val context = LocalContext.current
+    val repo = FirebaseRepository.getInstance()
 
     // Recursos de bottom bar / labels / descripciones
     val perfilLabel = stringResource(R.string.bottom_perfil_label)
@@ -52,16 +58,39 @@ fun CompanyHomeScreen(navController: NavHostController) {
     val headerTitle = stringResource(R.string.company_header_title)
     val headerSubtitle = stringResource(R.string.company_header_subtitle)
 
-    // Datos de ejemplo para ofertas
+    // Datos de ejemplo para fallback (se mantuvieron)
     val sampleOffers = listOf(
         JobOffer("1", "Desarrollador Android", "$3,000,000"),
         JobOffer("2", "Diseñador UX/UI", "$2,500,000"),
         JobOffer("3", "Analista de Datos", "$3,200,000")
     )
 
-    // Inicializar con datos de ejemplo
-    LaunchedEffect(Unit) {
-        jobOffers = sampleOffers
+    // Escucha en tiempo real a Firestore para empleos activos
+    DisposableEffect(Unit) {
+        val listener = repo.listenToActiveJobOffers(onUpdate = { list ->
+            // Mapear cada documento (mapa) a JobOffer
+            val mapped = list.mapIndexed { index, item ->
+                val idVal = item["id"] as? String
+                val titleVal = item["titulo"] as? String ?: item["title"] as? String
+                val salaryVal = item["salario"] as? String ?: item["salary"] as? String
+                JobOffer(
+                    id = idVal ?: (item["documentId"] as? String ?: index.toString()),
+                    title = titleVal ?: "",
+                    salary = salaryVal ?: ""
+                )
+            }
+            jobOffers = mapped
+        }, onError = { err ->
+            // Si hay error, dejamos el sample para que no se vea vacío
+            jobOffers = sampleOffers
+            Toast.makeText(context, "Error cargando ofertas: $err", Toast.LENGTH_LONG).show()
+        })
+
+        onDispose {
+            try {
+                listener.remove()
+            } catch (_: Exception) { /* ignore */ }
+        }
     }
 
     Scaffold(
@@ -216,7 +245,16 @@ fun CompanyHomeScreen(navController: NavHostController) {
                         offer = offer,
                         onEdit = { editingJob = offer },
                         onDelete = {
-                            jobOffers = jobOffers.filter { it.id != offer.id }
+                            // Llamada a Firebase para eliminar
+                            if (offer.id.isNotBlank()) {
+                                repo.deleteJobOffer(offer.id, onSuccess = {
+                                    Toast.makeText(context, "Oferta eliminada", Toast.LENGTH_SHORT).show()
+                                }, onError = { err ->
+                                    Toast.makeText(context, "Error al eliminar: $err", Toast.LENGTH_LONG).show()
+                                })
+                            } else {
+                                Toast.makeText(context, "ID inválido para eliminar", Toast.LENGTH_LONG).show()
+                            }
                         }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -234,20 +272,39 @@ fun CompanyHomeScreen(navController: NavHostController) {
                 editingJob = null
             },
             onSave = { jobOffer ->
+                val currentUser = repo.getCurrentUser()
+                val companyId = currentUser?.uid ?: ""
                 if (editingJob != null) {
-                    // Actualizar oferta existente
-                    jobOffers = jobOffers.map {
-                        if (it.id == jobOffer.id) jobOffer else it
+                    // Actualizar oferta existente en Firestore
+                    if (jobOffer.id.isNotBlank()) {
+                        repo.updateJobOffer(jobOffer.id, title = jobOffer.title, salary = jobOffer.salary, onSuccess = {
+                            Toast.makeText(context, "Oferta actualizada", Toast.LENGTH_SHORT).show()
+                        }, onError = { err ->
+                            Toast.makeText(context, "Error al actualizar: $err", Toast.LENGTH_LONG).show()
+                        })
+                    } else {
+                        Toast.makeText(context, "ID inválido para actualización", Toast.LENGTH_LONG).show()
                     }
                 } else {
-                    // Crear nueva oferta
-                    val newOffer = JobOffer(
-                        id = (jobOffers.size + 1).toString(),
+                    // Crear nueva oferta en Firestore
+                    // usamos companyId (si no hay user, se crea con companyId vacío)
+                    repo.createJobOffer(
+                        companyId = companyId,
                         title = jobOffer.title,
-                        salary = jobOffer.salary
+                        description = "",
+                        requirements = emptyList(),
+                        salary = jobOffer.salary,
+                        location = "",
+                        onSuccess = {
+                            Toast.makeText(context, "Oferta creada", Toast.LENGTH_SHORT).show()
+                        },
+                        onError = { err ->
+                            Toast.makeText(context, "Error al crear oferta: $err", Toast.LENGTH_LONG).show()
+                        }
                     )
-                    jobOffers = jobOffers + newOffer
                 }
+
+                // cerrar diálogo y limpiar
                 showAddDialog = false
                 editingJob = null
             }

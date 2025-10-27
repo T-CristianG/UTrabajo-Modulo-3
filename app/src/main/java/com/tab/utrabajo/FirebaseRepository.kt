@@ -291,9 +291,7 @@ class FirebaseRepository private constructor() {
         db.collection("usuarios").document(userId)
             .update(data)
             .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e ->
-                onError(e.message ?: "Error al guardar habilidades")
-            }
+            .addOnFailureListener { e -> onError(e.message ?: "Error al guardar habilidades") }
     }
 
     fun uploadCV(
@@ -470,7 +468,7 @@ class FirebaseRepository private constructor() {
     ) {
         val jobId = UUID.randomUUID().toString()
 
-        val data = hashMapOf(
+        val data = hashMapOf<String, Any?>(
             "id" to jobId,
             "empresaId" to companyId,
             "titulo" to title,
@@ -526,6 +524,42 @@ class FirebaseRepository private constructor() {
                 }
                 val jobs = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
                 onUpdate(jobs)
+            }
+    }
+
+    // -------------------
+    // Nuevas funciones: actualizar y eliminar oferta
+    // -------------------
+
+    fun updateJobOffer(
+        jobId: String,
+        title: String?,
+        salary: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val data = hashMapOf<String, Any>()
+        title?.let { data["titulo"] = it }
+        salary?.let { data["salario"] = it }
+        data["ultimaActualizacion"] = Timestamp.now()
+
+        db.collection("empleos").document(jobId)
+            .set(data, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(e.message ?: "Error actualizando oferta") }
+    }
+
+    fun deleteJobOffer(
+        jobId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        // Eliminamos el documento completamente
+        db.collection("empleos").document(jobId)
+            .delete()
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Error eliminando oferta")
             }
     }
 }
