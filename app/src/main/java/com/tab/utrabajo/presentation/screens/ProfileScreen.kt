@@ -113,12 +113,9 @@ fun ProfileScreen(navController: NavHostController? = null) {
     var cvUrl by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
-    var isEditing by remember { mutableStateOf(false) } // Controla si estamos en modo edición global
+    var isEditing by remember { mutableStateOf(false) }
 
-    // Nuevos estados: edición por campo
-    var isEditingPhone by remember { mutableStateOf(false) }
-    var isEditingAddress by remember { mutableStateOf(false) }
-    // Para revertir si cancela, guardamos temporales
+    // Estados para edición individual
     var phoneTemp by remember { mutableStateOf("") }
     var addressTemp by remember { mutableStateOf("") }
 
@@ -137,7 +134,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
             .addOnSuccessListener {
                 ref.downloadUrl.addOnSuccessListener { url ->
                     avatarUrl = url.toString()
-                    // Guardar en Firestore (merge)
                     db.collection("usuarios").document(uid)
                         .set(mapOf("photoUrl" to avatarUrl), com.google.firebase.firestore.SetOptions.merge())
                         .addOnSuccessListener {
@@ -172,7 +168,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
         }
         isLoading = true
         message = uploadingCvText
-        // Usa FirebaseRepository (ya implementado)
         FirebaseRepository.getInstance().uploadCV(
             fileUri = uri,
             userId = uid,
@@ -190,7 +185,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
         )
     }
 
-    // Función para guardar los datos del perfil (global)
+    // Función para guardar los datos del perfil
     fun saveProfile() {
         val uid = currentUser?.uid
         if (uid == null) {
@@ -198,6 +193,7 @@ fun ProfileScreen(navController: NavHostController? = null) {
             return
         }
         isLoading = true
+        message = savingProfileText
         val updates = hashMapOf<String, Any>(
             "telefono" to phone,
             "direccion" to address,
@@ -209,59 +205,14 @@ fun ProfileScreen(navController: NavHostController? = null) {
             .addOnSuccessListener {
                 isLoading = false
                 message = savedProfileText
-                isEditing = false // Salir del modo edición después de guardar
+                isEditing = false
                 Toast.makeText(context, savedProfileText, Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 isLoading = false
                 val err = String.format(Locale.getDefault(), errorSavingFmt, e.message ?: "")
                 message = err
-            }
-    }
-
-    // Guardar solo telefono
-    fun savePhone() {
-        val uid = currentUser?.uid
-        if (uid == null) {
-            message = userNotAuthenticated
-            return
-        }
-        isLoading = true
-        db.collection("usuarios").document(uid)
-            .set(mapOf("telefono" to phone), com.google.firebase.firestore.SetOptions.merge())
-            .addOnSuccessListener {
-                isLoading = false
-                isEditingPhone = false
-                message = savedPhoneText
-                Toast.makeText(context, savedPhoneText, Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener { e ->
-                isLoading = false
-                val err = String.format(Locale.getDefault(), errorSavingFmt, e.message ?: "")
-                message = err
-            }
-    }
-
-    // Guardar solo direccion
-    fun saveAddress() {
-        val uid = currentUser?.uid
-        if (uid == null) {
-            message = userNotAuthenticated
-            return
-        }
-        isLoading = true
-        db.collection("usuarios").document(uid)
-            .set(mapOf("direccion" to address), com.google.firebase.firestore.SetOptions.merge())
-            .addOnSuccessListener {
-                isLoading = false
-                isEditingAddress = false
-                message = savedAddressText
-                Toast.makeText(context, savedAddressText, Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener { e ->
-                isLoading = false
-                val err = String.format(Locale.getDefault(), errorSavingFmt, e.message ?: "")
-                message = err
+                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -281,6 +232,9 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     (data["photoUrl"] as? String)?.let { avatarUrl = it }
                     val nameFromDoc = (data["nombre"] as? String)
                     if (!nameFromDoc.isNullOrBlank() && displayName.isBlank()) displayName = nameFromDoc
+
+                    phoneTemp = phone
+                    addressTemp = address
                 }
             }
             .addOnFailureListener { e ->
@@ -296,7 +250,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                 containerColor = Color.White,
                 modifier = Modifier.height(70.dp)
             ) {
-                // Perfil
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -315,7 +268,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     onClick = { }
                 )
 
-                // Chat
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -334,7 +286,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     onClick = { /* TODO: Navegar a Chat */ }
                 )
 
-                // Home
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -353,7 +304,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     onClick = { navController?.popBackStack() }
                 )
 
-                // Notificaciones
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -372,7 +322,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     onClick = { /* TODO: Navegar a Notificaciones */ }
                 )
 
-                // Empleo
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -480,7 +429,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                     fontSize = 20.sp
                 )
 
-                // Mostrar profesión si está disponible
                 if (profession.isNotBlank()) {
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -499,216 +447,196 @@ fun ProfileScreen(navController: NavHostController? = null) {
 
                 Spacer(Modifier.height(24.dp))
 
+                // BOTÓN DE EDITAR INFORMACIÓN - ÚNICO BOTÓN DE EDICIÓN
+                if (!isEditing) {
+                    Button(
+                        onClick = {
+                            isEditing = true
+                            phoneTemp = phone
+                            addressTemp = address
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Editar Información", fontWeight = FontWeight.Medium)
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
+
                 // Información de contacto
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        // Fila principal (icono + contenido)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Título de la sección
+                        Text(
+                            "Información de Contacto",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Color(0xFF2F90D9),
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        // TELÉFONO
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Icon(
                                     Icons.Default.Phone,
-                                    contentDescription = savePhoneDesc,
-                                    tint = Color(0xFF2F90D9)
+                                    contentDescription = "Teléfono",
+                                    tint = Color(0xFF2F90D9),
+                                    modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    // Telefono (editable por campo)
-                                    if (isEditingPhone) {
-                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                            OutlinedTextField(
-                                                value = phone,
-                                                onValueChange = { phone = it },
-                                                modifier = Modifier.weight(1f),
-                                                label = { Text(labelPhone) },
-                                                singleLine = true,
-                                                shape = RoundedCornerShape(12.dp)
-                                            )
-                                            Spacer(Modifier.width(8.dp))
-                                            IconButton(onClick = { savePhone() }, enabled = !isLoading) {
-                                                Icon(Icons.Default.Check, contentDescription = savePhoneDesc, tint = Color(0xFF2F90D9))
-                                            }
-                                            IconButton(onClick = {
-                                                // cancelar: revertir valor y salir
-                                                isEditingPhone = false
-                                                phone = phoneTemp
-                                            }, enabled = !isLoading) {
-                                                Icon(Icons.Default.Close, contentDescription = buttonCancelLabel, tint = Color.Gray)
-                                            }
-                                        }
-                                    } else {
-                                        Column {
-                                            Text(
-                                                if (phone.isNotBlank()) phone else noPhone,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                if (address.isNotBlank()) address else noAddress,
-                                                color = Color.Gray,
-                                                fontSize = 14.sp
-                                            )
-                                        }
-                                    }
-                                }
+                                Text(
+                                    "Teléfono:",
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
 
-                            // Botones de editar:
-                            Column(horizontalAlignment = Alignment.End) {
-                                if (!isEditingPhone && !isEditingAddress) {
-                                    // Lápiz global (deja entrar al modo edición global)
-                                    IconButton(
-                                        onClick = { isEditing = true },
-                                        enabled = !isLoading
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Edit,
-                                            contentDescription = editAllDesc,
-                                            tint = Color(0xFF2F90D9)
-                                        )
-                                    }
-                                }
-                                // Lápiz individual para teléfono
-                                IconButton(
-                                    onClick = {
-                                        phoneTemp = phone
-                                        isEditingPhone = true
-                                        isEditingAddress = false
-                                        isEditing = false
-                                    },
-                                    enabled = !isLoading
-                                ) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = editTelDesc,
-                                        tint = Color(0xFF2F90D9)
-                                    )
-                                }
+                            Spacer(Modifier.height(8.dp))
 
-                                // Lápiz individual para dirección
-                                IconButton(
-                                    onClick = {
-                                        addressTemp = address
-                                        isEditingAddress = true
-                                        isEditingPhone = false
-                                        isEditing = false
-                                    },
-                                    enabled = !isLoading
-                                ) {
-                                    Icon(
-                                        Icons.Default.EditLocation,
-                                        contentDescription = editAddressDesc,
-                                        tint = Color(0xFF2F90D9)
-                                    )
-                                }
+                            if (isEditing) {
+                                OutlinedTextField(
+                                    value = phone,
+                                    onValueChange = { phone = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("Número de teléfono") },
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            } else {
+                                Text(
+                                    if (phone.isNotBlank()) phone else noPhone,
+                                    fontSize = 16.sp,
+                                    color = if (phone.isNotBlank()) Color.Black else Color.Gray,
+                                    modifier = Modifier.padding(start = 32.dp)
+                                )
                             }
                         }
 
-                        // Si el usuario está editando la dirección por campo, mostrar el campo aquí debajo
-                        if (isEditingAddress) {
+                        Spacer(Modifier.height(20.dp))
+
+                        // DIRECCIÓN
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.LocationOn,
+                                    contentDescription = "Dirección",
+                                    tint = Color(0xFF2F90D9),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    "Dirección:",
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
                             Spacer(Modifier.height(8.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+
+                            if (isEditing) {
                                 OutlinedTextField(
                                     value = address,
                                     onValueChange = { address = it },
-                                    modifier = Modifier.weight(1f),
-                                    label = { Text(labelAddress) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text("Dirección completa") },
+                                    singleLine = false,
                                     shape = RoundedCornerShape(12.dp)
                                 )
-                                Spacer(Modifier.width(8.dp))
-                                IconButton(onClick = { saveAddress() }, enabled = !isLoading) {
-                                    Icon(Icons.Default.Check, contentDescription = saveAddressDesc, tint = Color(0xFF2F90D9))
+                            } else {
+                                Text(
+                                    if (address.isNotBlank()) address else noAddress,
+                                    fontSize = 16.sp,
+                                    color = if (address.isNotBlank()) Color.Black else Color.Gray,
+                                    modifier = Modifier.padding(start = 32.dp)
+                                )
+                            }
+                        }
+
+                        // BOTONES DE GUARDAR/CANCELAR cuando se está editando
+                        if (isEditing) {
+                            Spacer(Modifier.height(20.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Button(
+                                    onClick = {
+                                        saveProfile()
+                                    },
+                                    enabled = !isLoading,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
+                                ) {
+                                    if (isLoading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            color = Color.White,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Text("Guardar", color = Color.White)
+                                    }
                                 }
-                                IconButton(onClick = {
-                                    isEditingAddress = false
-                                    address = addressTemp
-                                }, enabled = !isLoading) {
-                                    Icon(Icons.Default.Close, contentDescription = buttonCancelLabel, tint = Color.Gray)
+
+                                Spacer(Modifier.width(12.dp))
+
+                                Button(
+                                    onClick = {
+                                        isEditing = false
+                                        phone = phoneTemp
+                                        address = addressTemp
+                                    },
+                                    enabled = !isLoading,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                                ) {
+                                    Text("Cancelar", color = Color.White)
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(24.dp))
 
-                // Campos de edición global - SOLO se muestran cuando isEditing es true
-                if (isEditing) {
-                    OutlinedTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(labelPhone) },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = address,
-                        onValueChange = { address = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(labelAddress) },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(Modifier.height(16.dp))
-
-                    // Botones de acción en modo edición
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Button(
-                            onClick = {
-                                saveProfile()
-                            },
-                            enabled = !isLoading,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
-                        ) {
-                            Text(buttonSaveLabel, color = Color.White)
-                        }
-
-                        Spacer(Modifier.width(12.dp))
-
-                        Button(
-                            onClick = {
-                                isEditing = false // Cancelar edición sin guardar
-                            },
-                            enabled = !isLoading,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-                        ) {
-                            Text(buttonCancelLabel, color = Color.White)
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-                }
-
-                // Botón para subir HV (siempre visible)
+                // Botón para subir HV
                 Button(
                     onClick = { cvPicker.launch("application/pdf") },
                     enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
                 ) {
-                    Text(buttonUploadCv, color = Color.White)
+                    Icon(Icons.Default.Upload, contentDescription = "Subir", modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(buttonUploadCv, fontWeight = FontWeight.Medium)
                 }
 
                 Spacer(Modifier.height(16.dp))
 
                 // Estado del CV
                 if (cvUrl != null) {
-                    Text(text = cvLoadedText, color = Color(0xFF2F90D9))
+                    Text(text = cvLoadedText, color = Color(0xFF2F90D9), fontWeight = FontWeight.Medium)
                 } else {
                     Text(text = cvNotLoadedText, color = Color.Gray)
                 }
@@ -723,7 +651,6 @@ fun ProfileScreen(navController: NavHostController? = null) {
                 // Botón de cerrar sesión
                 Button(
                     onClick = {
-                        // Cerrar sesión y navegar a Login si tenemos navController
                         FirebaseAuth.getInstance().signOut()
                         navController?.let {
                             it.navigate(Screen.Login.route) {
@@ -735,9 +662,11 @@ fun ProfileScreen(navController: NavHostController? = null) {
                         .fillMaxWidth()
                         .height(48.dp),
                     shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2F90D9))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                 ) {
-                    Text(logoutLabel, color = Color.White)
+                    Icon(Icons.Default.Logout, contentDescription = "Cerrar sesión", modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(logoutLabel, fontWeight = FontWeight.Medium)
                 }
 
                 Spacer(Modifier.height(24.dp))
