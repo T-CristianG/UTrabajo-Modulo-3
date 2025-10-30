@@ -159,6 +159,7 @@ fun JobsListScreen(navController: NavHostController) {
                 )
 
                 // Home
+                // En JobsListScreen, reemplaza el onClick del Home:
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -174,9 +175,13 @@ fun JobsListScreen(navController: NavHostController) {
                         )
                     },
                     selected = false,
-                    onClick = { navController.popBackStack() }
+                    onClick = {
+                        // Navegar al home del estudiante
+                        navController.navigate(Screen.JobsList.route) {
+                            popUpTo(Screen.JobsList.route) { inclusive = true }
+                        }
+                    }
                 )
-
                 // Notificaciones
                 NavigationBarItem(
                     icon = {
