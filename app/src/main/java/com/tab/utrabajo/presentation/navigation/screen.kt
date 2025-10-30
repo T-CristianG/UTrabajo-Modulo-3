@@ -25,4 +25,10 @@ sealed class Screen(val route: String) {
     object CreateJob : Screen("create_job")
     object JobCreated : Screen("job_created")
 
+    // NUEVAS PANTALLAS DE CHAT
+    object ChatList : Screen("chat_list")
+    object ChatDetail : Screen("chat_detail")
+
+
+
 }

@@ -71,6 +71,7 @@ fun NavGraph() {
             // CORREGIDO: Rutas para crear empleo
             composable("create_job") { CreateJobScreen(navController) }
             composable("job_created") { JobCreatedScreen(navController) }
+
         }
     }
 }
