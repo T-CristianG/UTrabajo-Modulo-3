@@ -394,33 +394,34 @@ class FirebaseRepository private constructor() {
         onError: (String) -> Unit
     ) {
         val ref = storage.reference.child("avatars/$userId/avatar_${UUID.randomUUID()}.jpg")
+
         ref.putFile(imageUri)
             .addOnSuccessListener {
-                ref.downloadUrl.addOnSuccessListener { uri ->
-                    val url = uri.toString()
-                    val data = hashMapOf<String, Any>(
-                        "photoUrl" to url,
+                // Obtener la URL de descarga
+                ref.downloadUrl.addOnSuccessListener { downloadUri ->
+                    val imageUrl = downloadUri.toString()
+
+                    // Guardar en Firestore
+                    val userData = hashMapOf<String, Any>(
+                        "photoUrl" to imageUrl,
                         "ultimaActualizacion" to Timestamp.now()
                     )
+
                     db.collection("usuarios").document(userId)
-                        .set(data, com.google.firebase.firestore.SetOptions.merge())
+                        .set(userData, com.google.firebase.firestore.SetOptions.merge())
                         .addOnSuccessListener {
-                            auth.currentUser?.let { user ->
-                                val profileUpdates = UserProfileChangeRequest.Builder()
-                                    .setPhotoUri(uri)
-                                    .build()
-                                user.updateProfile(profileUpdates).addOnCompleteListener {
-                                    onSuccess(url)
-                                }
-                            } ?: onSuccess(url)
+                            onSuccess(imageUrl)
                         }
-                        .addOnFailureListener { e -> onError(e.message ?: "Error guardando avatar") }
-                }.addOnFailureListener { e ->
-                    onError(e.message ?: "Error obteniendo URL de avatar")
+                        .addOnFailureListener { e ->
+                            onError("Error guardando en Firestore: ${e.message}")
+                        }
                 }
+                    .addOnFailureListener { e ->
+                        onError("Error obteniendo URL: ${e.message}")
+                    }
             }
             .addOnFailureListener { e ->
-                onError(e.message ?: "Error subiendo avatar")
+                onError("Error subiendo imagen: ${e.message}")
             }
     }
 

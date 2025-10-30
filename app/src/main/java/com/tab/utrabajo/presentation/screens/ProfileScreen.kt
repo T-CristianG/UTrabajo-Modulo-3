@@ -129,34 +129,23 @@ fun ProfileScreen(navController: NavHostController? = null) {
         }
         isLoading = true
         message = uploadAvatarText
-        val ref = FirebaseStorage.getInstance().reference.child("users/$uid/avatar_${UUID.randomUUID()}.jpg")
-        ref.putFile(uri)
-            .addOnSuccessListener {
-                ref.downloadUrl.addOnSuccessListener { url ->
-                    avatarUrl = url.toString()
-                    db.collection("usuarios").document(uid)
-                        .set(mapOf("photoUrl" to avatarUrl), com.google.firebase.firestore.SetOptions.merge())
-                        .addOnSuccessListener {
-                            isLoading = false
-                            message = avatarUpdatedText
-                            Toast.makeText(context, avatarUpdatedText, Toast.LENGTH_SHORT).show()
-                        }
-                        .addOnFailureListener { e ->
-                            isLoading = false
-                            val err = String.format(Locale.getDefault(), errorUploadAvatarFmt, e.message ?: "")
-                            message = err
-                        }
-                }.addOnFailureListener { e ->
-                    isLoading = false
-                    val err = String.format(Locale.getDefault(), errorUploadAvatarFmt, e.message ?: "")
-                    message = err
-                }
-            }
-            .addOnFailureListener { e ->
+
+        // USA EL REPOSITORIO QUE YA FUNCIONA
+        FirebaseRepository.getInstance().uploadAvatar(
+            userId = uid,
+            imageUri = uri,
+            onSuccess = { url ->
                 isLoading = false
-                val err = String.format(Locale.getDefault(), errorUploadAvatarFmt, e.message ?: "")
+                avatarUrl = url
+                message = avatarUpdatedText
+                Toast.makeText(context, avatarUpdatedText, Toast.LENGTH_SHORT).show()
+            },
+            onError = { error ->
+                isLoading = false
+                val err = String.format(Locale.getDefault(), errorUploadAvatarFmt, error ?: "")
                 message = err
             }
+        )
     }
 
     val cvPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
