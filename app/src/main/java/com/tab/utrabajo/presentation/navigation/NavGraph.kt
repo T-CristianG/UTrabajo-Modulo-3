@@ -15,7 +15,32 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.tab.utrabajo.presentation.screens.*
+import com.tab.utrabajo.presentation.screens.ApplicationsScreen
+import com.tab.utrabajo.presentation.screens.ChatDetailScreen
+import com.tab.utrabajo.presentation.screens.ChatListScreen
+import com.tab.utrabajo.presentation.screens.CompanyDocumentsUploadScreen
+import com.tab.utrabajo.presentation.screens.CompanyRepresentativeScreen
+import com.tab.utrabajo.presentation.screens.CompleteCompanyScreen
+import com.tab.utrabajo.presentation.screens.CreateJobScreen
+import com.tab.utrabajo.presentation.screens.EmpleoScreen
+import com.tab.utrabajo.presentation.screens.JobCreatedScreen
+import com.tab.utrabajo.presentation.screens.JobsListScreen
+import com.tab.utrabajo.presentation.screens.LoginScreen
+import com.tab.utrabajo.presentation.screens.ProfileScreen
+import com.tab.utrabajo.presentation.screens.RecoverStartScreen
+import com.tab.utrabajo.presentation.screens.RecoverSuccessScreen
+import com.tab.utrabajo.presentation.screens.RegisterCompanyScreen
+import com.tab.utrabajo.presentation.screens.RegisterStudentScreen
+import com.tab.utrabajo.presentation.screens.RegistrationCompleteScreen
+import com.tab.utrabajo.presentation.screens.ResetPasswordScreen
+import com.tab.utrabajo.presentation.screens.RoleSelectionScreen
+import com.tab.utrabajo.presentation.screens.StudentSkillsScreen
+import com.tab.utrabajo.presentation.screens.StudentUploadCVScreen
+import com.tab.utrabajo.presentation.screens.StudentWorkInfoScreen
+import com.tab.utrabajo.presentation.screens.SplashScreen
+import com.tab.utrabajo.presentation.screens.VerifyCodeScreen
+import com.tab.utrabajo.presentation.navigation.Screen
+// IMPORT CORREGIDO: CompanyHomeScreen vive en otro paquete UI
 import com.tab.utrabajo.ui.company.CompanyHomeScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,20 +88,23 @@ fun NavGraph() {
             composable(Screen.ResetPassword.route) { ResetPasswordScreen(navController) }
             composable(Screen.RecoverSuccess.route) { RecoverSuccessScreen(navController) }
 
+            // Company home screen - import corregido a com.tab.utrabajo.ui.company.CompanyHomeScreen
             composable(Screen.CompanyHome.route) { CompanyHomeScreen(navController) }
 
+            // Ruta para pantalla de empleo (si la tenés separada)
             composable("empleo") { EmpleoScreen(navController) }
 
+            // Lista de empleos (JobsListScreen)
             composable(Screen.JobsList.route) { JobsListScreen(navController) }
+
+            // Perfil
             composable(Screen.Profile.route) { ProfileScreen(navController = navController) }
 
-            // CORREGIDO: Rutas para crear empleo
+            // Rutas para crear empleo
             composable("create_job") { CreateJobScreen(navController) }
             composable("job_created") { JobCreatedScreen(navController) }
-            composable(Screen.ChatList.route) {
-                ChatListScreen(navController)
-            }
-            // CORREGIDO: Solo una definición de ChatList
+
+            // Chat list y detalle (solo una definición de ChatList)
             composable(Screen.ChatList.route) { ChatListScreen(navController) }
             composable(
                 "${Screen.ChatDetail.route}/{chatId}",
@@ -85,9 +113,9 @@ fun NavGraph() {
                 val chatId = backStackEntry.arguments?.getString("chatId")
                 ChatDetailScreen(navController, chatId)
             }
+
+            // Pantalla de aplicaciones
             composable("applications_screen") { ApplicationsScreen(navController) }
-
-
         }
     }
 }

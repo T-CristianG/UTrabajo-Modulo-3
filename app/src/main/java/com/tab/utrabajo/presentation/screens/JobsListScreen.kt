@@ -1,5 +1,9 @@
 package com.tab.utrabajo.presentation.screens
 
+import android.widget.Toast
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +19,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,7 +28,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavHostController
 import com.google.firebase.firestore.ListenerRegistration
@@ -31,9 +36,6 @@ import com.tab.utrabajo.FirebaseRepository
 import com.tab.utrabajo.presentation.navigation.Screen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 
 @Composable
 fun JobsListScreen(navController: NavHostController) {
@@ -343,6 +345,16 @@ private fun JobCardForList(
     // Estado para mostrar mensajes de resultado
     var showMessage by remember { mutableStateOf(false) }
     var messageText by remember { mutableStateOf("") }
+    val context = LocalContext.current
+
+    // Mostrar Toast cuando showMessage sea true
+    LaunchedEffect(showMessage) {
+        if (showMessage) {
+            Toast.makeText(context, messageText, Toast.LENGTH_SHORT).show()
+            // resetear el flag para evitar repetir el Toast
+            showMessage = false
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -445,7 +457,7 @@ private fun JobCardForList(
         }
     }
 
-    // Diálogo personalizado
+    // Aquí uso la animación que te gustó (igual que en el otro archivo)
     if (showDescriptionDialog) {
         LaunchedEffect(Unit) {
             animateToExpanded = false
@@ -553,18 +565,22 @@ private fun JobCardForList(
                                             messageText = "¡Has aplicado exitosamente!"
                                             showMessage = true
 
-                                            // Crear chat automáticamente
+                                            // Cerrar el diálogo automáticamente al aplicar (animación)
+                                            coroutineScope.launch {
+                                                animateToExpanded = false
+                                                delay(180)
+                                                showDescriptionDialog = false
+                                            }
+
+                                            // Crear chat automáticamente (no bloquea el cierre)
                                             firebaseRepo.createOrGetChat(
                                                 studentId = currentUser.uid,
                                                 companyId = job.companyId,
                                                 jobId = job.id,
                                                 jobTitle = job.position,
-                                                onSuccess = { chatId ->
-                                                    // OPCIONAL: Navegar al chat si quieres
-                                                    // navController.navigate("${Screen.ChatDetail.route}/$chatId")
-                                                },
+                                                onSuccess = { chatId -> /* opcional */ },
                                                 onError = { error ->
-                                                    // Aún así mostramos éxito en la aplicación
+                                                    // opcional: actualizar mensaje o loggear
                                                     messageText = "Aplicación exitosa, pero error al crear chat"
                                                     showMessage = true
                                                 }
@@ -586,6 +602,28 @@ private fun JobCardForList(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Snackbar de mensajes (se mantiene, además del Toast)
+    if (showMessage) {
+        LaunchedEffect(showMessage) {
+            delay(2500)
+            showMessage = false
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 80.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Snackbar(
+                containerColor = Color(0xFF2B7BBF),
+                contentColor = Color.White,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(messageText)
             }
         }
     }
