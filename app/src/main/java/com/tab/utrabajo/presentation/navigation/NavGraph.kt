@@ -10,9 +10,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.tab.utrabajo.presentation.screens.*
 import com.tab.utrabajo.ui.company.CompanyHomeScreen
 
@@ -71,6 +73,20 @@ fun NavGraph() {
             // CORREGIDO: Rutas para crear empleo
             composable("create_job") { CreateJobScreen(navController) }
             composable("job_created") { JobCreatedScreen(navController) }
+            composable(Screen.ChatList.route) {
+                ChatListScreen(navController)
+            }
+            // CORREGIDO: Solo una definición de ChatList
+            composable(Screen.ChatList.route) { ChatListScreen(navController) }
+            composable(
+                "${Screen.ChatDetail.route}/{chatId}",
+                arguments = listOf(navArgument("chatId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val chatId = backStackEntry.arguments?.getString("chatId")
+                ChatDetailScreen(navController, chatId)
+            }
+            composable("applications_screen") { ApplicationsScreen(navController) }
+
 
         }
     }

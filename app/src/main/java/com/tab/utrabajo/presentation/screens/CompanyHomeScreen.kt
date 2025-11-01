@@ -130,6 +130,7 @@ fun CompanyHomeScreen(navController: NavHostController) {
                 )
 
                 // Chat
+                // En el bottom bar del CompanyHomeScreen, CORREGIR el ítem de Chat:
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -145,7 +146,10 @@ fun CompanyHomeScreen(navController: NavHostController) {
                         )
                     },
                     selected = false,
-                    onClick = { /* TODO: Navegar a Chat */ }
+                    onClick = {
+                        // Navegar a la pantalla de chats de empresa
+                        navController.navigate("company_chats")
+                    }
                 )
 
                 // Home

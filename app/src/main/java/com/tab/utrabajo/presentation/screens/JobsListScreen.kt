@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -68,30 +69,31 @@ fun JobsListScreen(navController: NavHostController) {
     DisposableEffect(Unit) {
         val listener: ListenerRegistration = firebaseRepo.listenToActiveJobOffers(
             onUpdate = { jobs ->
-                // Mapear los documentos a JobItemData - AHORA INCLUYE DESCRIPCION
                 val mapped = jobs.map { doc ->
-                    // Obtener título del puesto
                     val position = (
                             doc["titulo"]
                                 ?: doc["title"]
                                 ?: "Sin título"
                             ).toString()
 
-                    // Obtener salario
                     val salary = (
                             doc["salario"]
                                 ?: doc["salary"]
                                 ?: "Salario no especificado"
                             ).toString()
 
-                    // Obtener descripción (si existe)
                     val description = (
                             doc["descripcion"]
                                 ?: doc["description"]
                                 ?: ""
                             ).toString()
 
+                    val jobId = doc["id"]?.toString() ?: doc["documentId"]?.toString() ?: ""
+                    val companyId = doc["empresaId"]?.toString() ?: ""
+
                     JobItemData(
+                        id = jobId,
+                        companyId = companyId,
                         position = position,
                         salary = salary,
                         description = description,
@@ -143,7 +145,7 @@ fun JobsListScreen(navController: NavHostController) {
                 NavigationBarItem(
                     icon = {
                         Icon(
-                            Icons.Default.Chat,
+                            Icons.AutoMirrored.Filled.Chat,
                             contentDescription = chatDesc,
                             modifier = Modifier.size(24.dp)
                         )
@@ -155,11 +157,10 @@ fun JobsListScreen(navController: NavHostController) {
                         )
                     },
                     selected = false,
-                    onClick = { /* TODO: Navegar a Chat */ }
+                    onClick = { navController.navigate(Screen.ChatList.route) }
                 )
 
                 // Home
-                // En JobsListScreen, reemplaza el onClick del Home:
                 NavigationBarItem(
                     icon = {
                         Icon(
@@ -176,12 +177,12 @@ fun JobsListScreen(navController: NavHostController) {
                     },
                     selected = false,
                     onClick = {
-                        // Navegar al home del estudiante
                         navController.navigate(Screen.JobsList.route) {
                             popUpTo(Screen.JobsList.route) { inclusive = true }
                         }
                     }
                 )
+
                 // Notificaciones
                 NavigationBarItem(
                     icon = {
@@ -217,7 +218,7 @@ fun JobsListScreen(navController: NavHostController) {
                         )
                     },
                     selected = true,
-                    onClick = { }
+                    onClick = { navController.navigate("applications_screen") }
                 )
             }
         }
@@ -280,13 +281,11 @@ fun JobsListScreen(navController: NavHostController) {
                     CircularProgressIndicator(color = Color(0xFF2B7BBF))
                 }
             } else {
-                // Filtrar por query (ahora también podrías filtrar por descripción si quieres)
                 val filtered = jobList.filter {
                     it.position.contains(query, ignoreCase = true) ||
                             it.salary.contains(query, ignoreCase = true)
                 }
 
-                // Lista de trabajos
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -310,12 +309,12 @@ fun JobsListScreen(navController: NavHostController) {
                             }
                         }
                     } else {
-                        items(items = filtered, key = { it.position + it.salary }) { job ->
+                        items(items = filtered, key = { it.id }) { job ->
                             JobCardForList(
-                                position = job.position,
-                                salary = job.salary,
-                                description = job.description, // ahora pasamos la descripción
-                                onClick = { /* mantenemos posible navegación si la necesitas */ },
+                                job = job,
+                                firebaseRepo = firebaseRepo,
+                                navController = navController,
+                                onClick = { },
                                 viewDetails = viewDetails,
                                 viewDetailsDesc = viewDetailsDesc
                             )
@@ -329,9 +328,9 @@ fun JobsListScreen(navController: NavHostController) {
 
 @Composable
 private fun JobCardForList(
-    position: String,
-    salary: String,
-    description: String,
+    job: JobItemData,
+    firebaseRepo: FirebaseRepository,
+    navController: NavHostController,
     onClick: () -> Unit,
     viewDetails: String,
     viewDetailsDesc: String
@@ -340,15 +339,17 @@ private fun JobCardForList(
     var showDescriptionDialog by remember { mutableStateOf(false) }
     var animateToExpanded by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val currentUser = firebaseRepo.getCurrentUser()
+    // Estado para mostrar mensajes de resultado
+    var showMessage by remember { mutableStateOf(false) }
+    var messageText by remember { mutableStateOf("") }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(cardHeight)
             .clickable {
-                // Ejecutamos el callback externo y además mostramos el diálogo con la descripción
                 onClick()
-                // abrir dialogo (inicia animación)
                 showDescriptionDialog = true
             },
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -361,7 +362,6 @@ private fun JobCardForList(
                 .padding(vertical = 12.dp, horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Logo circular
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -385,7 +385,6 @@ private fun JobCardForList(
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            // SOLO CARGO Y SALARIO - SIN EMPRESA NI ID (seguimos igual)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -393,16 +392,16 @@ private fun JobCardForList(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = position, // CARGO en azul
+                    text = job.position,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                     color = Color(0xFF1E88E5),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(8.dp)) // Más espacio entre cargo y salario
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = salary, // SALARIO en verde
+                    text = job.salary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color(0xFF2E7D32),
@@ -411,7 +410,6 @@ private fun JobCardForList(
                 )
             }
 
-            // Botón ver detalles
             Column(
                 modifier = Modifier
                     .width(80.dp)
@@ -447,28 +445,22 @@ private fun JobCardForList(
         }
     }
 
-    // Diálogo personalizado que "se expande" desde el tamaño de la tarjeta
+    // Diálogo personalizado
     if (showDescriptionDialog) {
-        // Control de animación: primero aparece el Dialog (con tamaño inicial),
-        // luego activamos animateToExpanded para expandir altura/scale.
         LaunchedEffect(Unit) {
             animateToExpanded = false
-            // pequeña pausa para que compose monte el Dialog y luego anime
             delay(10)
             animateToExpanded = true
         }
 
-        // animaciones: altura y escala
         val targetHeight = if (animateToExpanded) 380.dp else cardHeight
         val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(durationMillis = 380))
         val scaleTarget = if (animateToExpanded) 1f else 0.96f
         val animatedScale by animateFloatAsState(targetValue = scaleTarget, animationSpec = tween(durationMillis = 380))
 
         Dialog(onDismissRequest = {
-            // al cerrar, invertimos la animación para que "encoga"
             coroutineScope.launch {
                 animateToExpanded = false
-                // dejamos tiempo a la animación de encoger
                 delay(200)
                 showDescriptionDialog = false
             }
@@ -491,20 +483,18 @@ private fun JobCardForList(
                         .fillMaxSize()
                         .padding(18.dp)
                 ) {
-                    // Header del dialogo (título del puesto y un icono de cerrar arriba a la derecha)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = position,
+                            text = job.position,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFF1E88E5),
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = {
-                            // cerrar con animación usando coroutineScope
                             coroutineScope.launch {
                                 animateToExpanded = false
                                 delay(180)
@@ -517,7 +507,6 @@ private fun JobCardForList(
 
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Contenido: descripción (puede ser multilinea)
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -531,13 +520,12 @@ private fun JobCardForList(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = if (description.isNotBlank()) description else "Descripción no disponible",
+                            text = job.description.ifBlank { "Descripción no disponible" },
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.DarkGray
                         )
                     }
 
-                    // Pie con salario y botón (manteniendo diseño simple)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -545,15 +533,56 @@ private fun JobCardForList(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = salary,
+                            text = job.salary,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF2E7D32),
                             modifier = Modifier.weight(1f)
                         )
 
-                        Button(onClick = { /* si quieres acción adicional */ }) {
-                            Text(text = "Aplicar")
+                        Button(
+                            onClick = {
+                                if (currentUser != null && job.id.isNotEmpty() && job.companyId.isNotEmpty()) {
+                                    firebaseRepo.applyToJob(
+                                        jobId = job.id,
+                                        studentId = currentUser.uid,
+                                        companyId = job.companyId,
+                                        jobTitle = job.position,
+                                        onSuccess = {
+                                            // MOSTRAR MENSAJE DE ÉXITO
+                                            messageText = "¡Has aplicado exitosamente!"
+                                            showMessage = true
+
+                                            // Crear chat automáticamente
+                                            firebaseRepo.createOrGetChat(
+                                                studentId = currentUser.uid,
+                                                companyId = job.companyId,
+                                                jobId = job.id,
+                                                jobTitle = job.position,
+                                                onSuccess = { chatId ->
+                                                    // OPCIONAL: Navegar al chat si quieres
+                                                    // navController.navigate("${Screen.ChatDetail.route}/$chatId")
+                                                },
+                                                onError = { error ->
+                                                    // Aún así mostramos éxito en la aplicación
+                                                    messageText = "Aplicación exitosa, pero error al crear chat"
+                                                    showMessage = true
+                                                }
+                                            )
+                                        },
+                                        onError = { error ->
+                                            messageText = "Error al aplicar: $error"
+                                            showMessage = true
+                                        }
+                                    )
+                                } else {
+                                    messageText = "No se puede aplicar. Información incompleta."
+                                    showMessage = true
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2B7BBF))
+                        ) {
+                            Text(text = stringResource(R.string.apply_button))
                         }
                     }
                 }
@@ -563,6 +592,8 @@ private fun JobCardForList(
 }
 
 data class JobItemData(
+    val id: String,
+    val companyId: String,
     val position: String,
     val salary: String,
     val description: String,

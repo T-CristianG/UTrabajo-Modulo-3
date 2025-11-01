@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,16 +22,15 @@ import androidx.navigation.NavHostController
 import com.tab.utrabajo.FirebaseRepository
 import com.tab.utrabajo.R
 import com.tab.utrabajo.presentation.navigation.Screen
-import kotlinx.coroutines.launch
 
 @Composable
-fun ChatListScreen(navController: NavHostController) {
+fun ApplicationsScreen(navController: NavHostController) {
     val firebaseRepo = remember { FirebaseRepository.getInstance() }
     val currentUser = firebaseRepo.getCurrentUser()
-    var chats by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var applications by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // Recursos de strings - AGREGAR IMPORTACIÓN ARRIBA
+    // Recursos de strings para el bottom bar - AGREGAR IMPORTACIÓN
     val perfilLabel = stringResource(R.string.bottom_perfil_label)
     val perfilDesc = stringResource(R.string.bottom_perfil_desc)
     val chatLabel = stringResource(R.string.bottom_chat_label)
@@ -46,15 +44,14 @@ fun ChatListScreen(navController: NavHostController) {
 
     LaunchedEffect(Unit) {
         if (currentUser != null) {
-            firebaseRepo.getChatsForUser(
-                userId = currentUser.uid,
-                userType = "student",
-                onSuccess = { chatsList ->
-                    chats = chatsList
+            firebaseRepo.getStudentApplications(
+                studentId = currentUser.uid,
+                onSuccess = { apps ->
+                    applications = apps
                     isLoading = false
                 },
                 onError = {
-                    chats = emptyList()
+                    applications = emptyList()
                     isLoading = false
                 }
             )
@@ -90,7 +87,7 @@ fun ChatListScreen(navController: NavHostController) {
                 NavigationBarItem(
                     icon = {
                         Icon(
-                            Icons.AutoMirrored.Filled.Chat,
+                            Icons.Default.Chat,
                             contentDescription = chatDesc,
                             modifier = Modifier.size(24.dp)
                         )
@@ -101,8 +98,8 @@ fun ChatListScreen(navController: NavHostController) {
                             fontSize = 12.sp
                         )
                     },
-                    selected = true,
-                    onClick = { }
+                    selected = false,
+                    onClick = { navController.navigate(Screen.ChatList.route) }
                 )
 
                 NavigationBarItem(
@@ -159,10 +156,8 @@ fun ChatListScreen(navController: NavHostController) {
                             fontSize = 12.sp
                         )
                     },
-                    selected = false,
-                    onClick = {
-                        navController.navigate("applications_screen")
-                    }
+                    selected = true,
+                    onClick = { }
                 )
             }
         }
@@ -180,7 +175,7 @@ fun ChatListScreen(navController: NavHostController) {
                     .padding(24.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.chat_list_title),
+                    text = stringResource(R.string.applications_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
@@ -190,7 +185,7 @@ fun ChatListScreen(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = stringResource(R.string.chat_list_subtitle),
+                    text = stringResource(R.string.applications_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 14.sp,
                     color = Color.Gray
@@ -206,7 +201,7 @@ fun ChatListScreen(navController: NavHostController) {
                 ) {
                     CircularProgressIndicator(color = Color(0xFF2B7BBF))
                 }
-            } else if (chats.isEmpty()) {
+            } else if (applications.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -215,19 +210,19 @@ fun ChatListScreen(navController: NavHostController) {
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = stringResource(R.string.chat_list_empty),
+                            Icons.Default.WorkOutline,
+                            contentDescription = stringResource(R.string.applications_empty),
                             modifier = Modifier.size(64.dp),
                             tint = Color.Gray
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = stringResource(R.string.chat_list_empty),
+                            text = stringResource(R.string.applications_empty),
                             color = Color.Gray,
                             fontSize = 16.sp
                         )
                         Text(
-                            text = stringResource(R.string.chat_list_empty_subtitle),
+                            text = stringResource(R.string.applications_empty_subtitle),
                             color = Color.Gray,
                             fontSize = 14.sp
                         )
@@ -241,12 +236,40 @@ fun ChatListScreen(navController: NavHostController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-                    items(items = chats, key = { it["id"].toString() }) { chat ->
-                        ChatListItem(
-                            chat = chat,
-                            onClick = {
-                                val chatId = chat["id"].toString()
-                                navController.navigate("${Screen.ChatDetail.route}/$chatId")
+                    items(items = applications, key = { it["id"].toString() }) { application ->
+                        ApplicationItem(
+                            application = application,
+                            onCancel = { appId ->
+                                firebaseRepo.cancelApplication(
+                                    applicationId = appId,
+                                    onSuccess = {
+                                        // Recargar aplicaciones
+                                        currentUser?.uid?.let { uid ->
+                                            firebaseRepo.getStudentApplications(
+                                                studentId = uid,
+                                                onSuccess = { apps ->
+                                                    applications = apps
+                                                },
+                                                onError = {}
+                                            )
+                                        }
+                                    },
+                                    onError = {}
+                                )
+                            },
+                            onChat = { jobId, companyId, jobTitle ->
+                                if (currentUser != null) {
+                                    firebaseRepo.createOrGetChat(
+                                        studentId = currentUser.uid,
+                                        companyId = companyId,
+                                        jobId = jobId,
+                                        jobTitle = jobTitle,
+                                        onSuccess = { chatId ->
+                                            navController.navigate("${Screen.ChatDetail.route}/$chatId")
+                                        },
+                                        onError = {}
+                                    )
+                                }
                             }
                         )
                     }
@@ -257,79 +280,96 @@ fun ChatListScreen(navController: NavHostController) {
 }
 
 @Composable
-private fun ChatListItem(
-    chat: Map<String, Any>,
-    onClick: () -> Unit
+private fun ApplicationItem(
+    application: Map<String, Any>,
+    onCancel: (String) -> Unit,
+    onChat: (String, String, String) -> Unit
 ) {
-    val jobTitle = chat["jobTitle"]?.toString() ?: "Empleo"
-    val lastMessage = chat["lastMessage"]?.toString() ?: "No hay mensajes"
-    val lastMessageTime = chat["lastMessageTime"] as? com.google.firebase.Timestamp
-
-    // Formatear la hora del último mensaje
-    val timeText = if (lastMessageTime != null) {
-        val date = lastMessageTime.toDate()
-        "${date.hours}:${date.minutes.toString().padStart(2, '0')}"
-    } else {
-        ""
-    }
+    val jobTitle = application["jobTitle"]?.toString() ?: "Empleo"
+    val applicationId = application["id"]?.toString() ?: ""
+    val jobId = application["jobId"]?.toString() ?: ""
+    val companyId = application["companyId"]?.toString() ?: ""
+    val applicationDate = application["applicationDate"] as? com.google.firebase.Timestamp
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+            .fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .background(Color(0xFF2B7BBF), shape = CircleShape),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Default.Business,
-                    contentDescription = "Empresa",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
+                // Icono
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color(0xFF2B7BBF), shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Work,
+                        contentDescription = "Empleo",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Información
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = jobTitle,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "Postulado: ${applicationDate?.toDate()?.toString()?.substring(0, 10) ?: ""}",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Contenido
-            Column(
-                modifier = Modifier.weight(1f)
+            // Botones de acción
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = jobTitle,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    color = Color.Black,
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = lastMessage,
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    maxLines = 1
-                )
-            }
+                Button(
+                    onClick = {
+                        onChat(jobId, companyId, jobTitle)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2B7BBF)
+                    )
+                ) {
+                    Icon(Icons.Default.Chat, contentDescription = "Chat", modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(stringResource(R.string.applications_button_chat))
+                }
 
-            // Tiempo
-            Text(
-                text = timeText,
-                fontSize = 12.sp,
-                color = Color.Gray
-            )
+                OutlinedButton(
+                    onClick = { onCancel(applicationId) },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.Red
+                    )
+                ) {
+                    Text(stringResource(R.string.applications_button_cancel))
+                }
+            }
         }
     }
 }

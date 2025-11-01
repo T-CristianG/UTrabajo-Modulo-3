@@ -22,11 +22,12 @@ class FirebaseRepository private constructor() {
         }
     }
 
+    // Instancias de Firebase
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 
-    // 🔹 Obtener usuario actual
+    // Obtener usuario actual
     fun getCurrentUser() = auth.currentUser
 
     // -------------------
@@ -49,15 +50,7 @@ class FirebaseRepository private constructor() {
                         return@addOnCompleteListener
                     }
 
-                    // actualizar displayName en Auth
-                    val profileUpdates = UserProfileChangeRequest.Builder()
-                        .setDisplayName(fullName)
-                        .build()
-
-                    user.updateProfile(profileUpdates).addOnCompleteListener {
-                        // ignoramos el resultado aquí; seguimos guardando Firestore
-                    }
-
+                    // Guardar en Firestore
                     val data = hashMapOf(
                         "uid" to uid,
                         "nombre" to fullName,
@@ -84,11 +77,11 @@ class FirebaseRepository private constructor() {
         phone: String,
         email: String,
         workers: String,
-        password: String, // Nuevo parámetro
+        password: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        auth.createUserWithEmailAndPassword(email, password) // Usar la contraseña real
+        auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val user = task.result?.user
@@ -120,18 +113,17 @@ class FirebaseRepository private constructor() {
             }
     }
 
-    // 🔹 Documento de representante opcional
+    // Documento de representante
     fun saveCompanyRepresentative(
         userId: String,
         repName: String,
         docType: String,
         docNumber: String,
-        docUri: Uri?, // Cambiado a nullable
+        docUri: Uri?,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
         if (docUri != null) {
-            // Si hay documento, subirlo y luego guardar los datos
             val docRef = storage.reference.child("empresas/$userId/representante/${UUID.randomUUID()}.pdf")
             docRef.putFile(docUri)
                 .addOnSuccessListener {
@@ -158,7 +150,6 @@ class FirebaseRepository private constructor() {
                     onError("Error subiendo documento: ${e.message}")
                 }
         } else {
-            // Si no hay documento, guardar solo los datos básicos
             val data = hashMapOf<String, Any>(
                 "representanteLegal" to repName,
                 "tipoDocumento" to docType,
@@ -175,25 +166,24 @@ class FirebaseRepository private constructor() {
         }
     }
 
-    // 🔹 MODIFICACIÓN: Documentos opcionales para CompanyDocumentsUpload
+    // Documentos opcionales para CompanyDocumentsUpload
     fun uploadCompanyDocuments(
         userId: String,
-        rutUri: Uri?,  // Cambiado a nullable
-        camaraComercioUri: Uri?,  // Cambiado a nullable
+        rutUri: Uri?,
+        camaraComercioUri: Uri?,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
         var rutUrl: String? = null
         var camaraUrl: String? = null
         var tasksCompleted = 0
-        val totalTasks = 2 // Siempre intentamos actualizar, aunque no haya archivos
+        val totalTasks = 2
 
         fun checkCompletion() {
             tasksCompleted++
             if (tasksCompleted == totalTasks) {
                 val data = hashMapOf<String, Any>()
 
-                // Solo agregamos las URLs si existen
                 rutUrl?.let { data["rutUrl"] = it }
                 camaraUrl?.let { data["camaraComercioUrl"] = it }
 
@@ -209,7 +199,6 @@ class FirebaseRepository private constructor() {
             }
         }
 
-        // Subir RUT si existe
         if (rutUri != null) {
             val rutRef = storage.reference.child("empresas/$userId/documentos/rut_${UUID.randomUUID()}.pdf")
             rutRef.putFile(rutUri)
@@ -218,12 +207,10 @@ class FirebaseRepository private constructor() {
                         rutUrl = url.toString()
                         checkCompletion()
                     }.addOnFailureListener { e ->
-                        // Si falla la descarga de URL, continuamos sin RUT
                         checkCompletion()
                     }
                 }
                 .addOnFailureListener { e ->
-                    // Si falla la subida, continuamos sin RUT
                     checkCompletion()
                 }
         } else {
@@ -231,7 +218,6 @@ class FirebaseRepository private constructor() {
             checkCompletion()
         }
 
-        // Subir Cámara de Comercio si existe
         if (camaraComercioUri != null) {
             val camaraRef = storage.reference.child("empresas/$userId/documentos/camara_${UUID.randomUUID()}.pdf")
             camaraRef.putFile(camaraComercioUri)
@@ -240,12 +226,10 @@ class FirebaseRepository private constructor() {
                         camaraUrl = url.toString()
                         checkCompletion()
                     }.addOnFailureListener { e ->
-                        // Si falla la descarga de URL, continuamos sin cámara
                         checkCompletion()
                     }
                 }
                 .addOnFailureListener { e ->
-                    // Si falla la subida, continuamos sin cámara
                     checkCompletion()
                 }
         } else {
@@ -254,6 +238,7 @@ class FirebaseRepository private constructor() {
         }
     }
 
+    // Funciones de estudiante
     fun saveStudentWorkInfo(
         userId: String,
         worksNow: Boolean,
@@ -326,6 +311,7 @@ class FirebaseRepository private constructor() {
             }
     }
 
+    // Login y logout
     fun loginUser(
         email: String,
         password: String,
@@ -397,11 +383,9 @@ class FirebaseRepository private constructor() {
 
         ref.putFile(imageUri)
             .addOnSuccessListener {
-                // Obtener la URL de descarga
                 ref.downloadUrl.addOnSuccessListener { downloadUri ->
                     val imageUrl = downloadUri.toString()
 
-                    // Guardar en Firestore
                     val userData = hashMapOf<String, Any>(
                         "photoUrl" to imageUrl,
                         "ultimaActualizacion" to Timestamp.now()
@@ -454,7 +438,7 @@ class FirebaseRepository private constructor() {
     }
 
     // -------------------
-    // Funciones para empleos
+    // FUNCIONES DE EMPLEOS (LAS QUE TE FALTABAN)
     // -------------------
 
     fun createJobOffer(
@@ -489,49 +473,6 @@ class FirebaseRepository private constructor() {
             }
     }
 
-    /**
-     * Petición one-time para obtener empleos activos (no vinculante).
-     */
-    fun getActiveJobOffers(
-        onSuccess: (List<Map<String, Any>>) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        db.collection("empleos")
-            .whereEqualTo("activa", true)
-            .get()
-            .addOnSuccessListener { querySnapshot ->
-                val jobs = querySnapshot.documents.mapNotNull { it.data }
-                onSuccess(jobs)
-            }
-            .addOnFailureListener { e ->
-                onError(e.message ?: "Error al cargar empleos")
-            }
-    }
-
-    /**
-     * Listener en tiempo real para empleos activos.
-     * Devuelve ListenerRegistration para poder remover el listener cuando se deseé.
-     */
-    fun listenToActiveJobOffers(
-        onUpdate: (List<Map<String, Any>>) -> Unit,
-        onError: (String) -> Unit
-    ): ListenerRegistration {
-        return db.collection("empleos")
-            .whereEqualTo("activa", true)
-            .addSnapshotListener { snapshot, e ->
-                if (e != null) {
-                    onError(e.message ?: "Error al escuchar empleos")
-                    return@addSnapshotListener
-                }
-                val jobs = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
-                onUpdate(jobs)
-            }
-    }
-
-    // -------------------
-    // Nuevas funciones: actualizar y eliminar oferta
-    // -------------------
-
     fun updateJobOffer(
         jobId: String,
         title: String?,
@@ -555,7 +496,6 @@ class FirebaseRepository private constructor() {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // Eliminamos el documento completamente
         db.collection("empleos").document(jobId)
             .delete()
             .addOnSuccessListener { onSuccess() }
@@ -563,7 +503,236 @@ class FirebaseRepository private constructor() {
                 onError(e.message ?: "Error eliminando oferta")
             }
     }
-    
 
+    fun getActiveJobOffers(
+        onSuccess: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("empleos")
+            .whereEqualTo("activa", true)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                val jobs = querySnapshot.documents.mapNotNull { it.data }
+                onSuccess(jobs)
+            }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Error al cargar empleos")
+            }
+    }
+
+    fun listenToActiveJobOffers(
+        onUpdate: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ): ListenerRegistration {
+        return db.collection("empleos")
+            .whereEqualTo("activa", true)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    onError(error.message ?: "Error al escuchar empleos")
+                    return@addSnapshotListener
+                }
+                val jobs = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+                onUpdate(jobs)
+            }
+    }
+
+    // -------------------
+    // FUNCIONES DE POSTULACIONES Y CHAT
+    // -------------------
+
+    fun applyToJob(
+        jobId: String,
+        studentId: String,
+        companyId: String,
+        jobTitle: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val applicationId = UUID.randomUUID().toString()
+        val data = hashMapOf<String, Any>(
+            "id" to applicationId,
+            "jobId" to jobId,
+            "studentId" to studentId,
+            "companyId" to companyId,
+            "jobTitle" to jobTitle,
+            "status" to "active",
+            "applicationDate" to Timestamp.now()
+        )
+
+        db.collection("applications").document(applicationId)
+            .set(data)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Error al aplicar al empleo")
+            }
+    }
+
+    fun getStudentApplications(
+        studentId: String,
+        onSuccess: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("applications")
+            .whereEqualTo("studentId", studentId)
+            .whereEqualTo("status", "active")
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                val applications = querySnapshot.documents.mapNotNull { it.data }
+                onSuccess(applications)
+            }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Error al cargar las postulaciones")
+            }
+    }
+
+    fun cancelApplication(
+        applicationId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("applications").document(applicationId)
+            .update("status", "cancelled")
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Error al cancelar la postulación")
+            }
+    }
+
+    // Funciones para el chat
+    fun createOrGetChat(
+        studentId: String,
+        companyId: String,
+        jobId: String,
+        jobTitle: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("chats")
+            .whereEqualTo("studentId", studentId)
+            .whereEqualTo("jobId", jobId)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    val chatId = querySnapshot.documents.first().id
+                    onSuccess(chatId)
+                } else {
+                    val chatId = UUID.randomUUID().toString()
+                    val chatData = hashMapOf<String, Any>(
+                        "id" to chatId,
+                        "studentId" to studentId,
+                        "companyId" to companyId,
+                        "jobId" to jobId,
+                        "jobTitle" to jobTitle,
+                        "createdAt" to Timestamp.now(),
+                        "lastMessage" to "",
+                        "lastMessageTime" to Timestamp.now()
+                    )
+
+                    db.collection("chats").document(chatId)
+                        .set(chatData)
+                        .addOnSuccessListener { onSuccess(chatId) }
+                        .addOnFailureListener { e ->
+                            onError("Error creando chat: ${e.message}")
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                onError("Error buscando chat: ${e.message}")
+            }
+    }
+
+    fun sendMessage(
+        chatId: String,
+        senderId: String,
+        messageText: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val messageId = UUID.randomUUID().toString()
+        val messageData = hashMapOf<String, Any>(
+            "id" to messageId,
+            "chatId" to chatId,
+            "senderId" to senderId,
+            "message" to messageText,
+            "timestamp" to Timestamp.now()
+        )
+
+        db.collection("messages").document(messageId)
+            .set(messageData)
+            .addOnSuccessListener {
+                // Actualizar último mensaje en el chat
+                val updateData = hashMapOf<String, Any>(
+                    "lastMessage" to messageText,
+                    "lastMessageTime" to Timestamp.now()
+                )
+                db.collection("chats").document(chatId)
+                    .update(updateData)
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { e ->
+                        onError("Error actualizando último mensaje: ${e.message}")
+                    }
+            }
+            .addOnFailureListener { e ->
+                onError("Error enviando mensaje: ${e.message}")
+            }
+    }
+
+    fun getChatsForUser(
+        userId: String,
+        userType: String,
+        onSuccess: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val field = if (userType == "student") "studentId" else "companyId"
+
+        db.collection("chats")
+            .whereEqualTo(field, userId)
+            .orderBy("lastMessageTime", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                val chats = querySnapshot.documents.mapNotNull { it.data }
+                onSuccess(chats)
+            }
+            .addOnFailureListener { e ->
+                onError("Error cargando chats: ${e.message}")
+            }
+    }
+
+    fun getMessages(
+        chatId: String,
+        onSuccess: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("messages")
+            .whereEqualTo("chatId", chatId)
+            .orderBy("timestamp")
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                val messages = querySnapshot.documents.mapNotNull { it.data }
+                onSuccess(messages)
+            }
+            .addOnFailureListener { e ->
+                onError("Error cargando mensajes: ${e.message}")
+            }
+    }
+
+    // Listener en tiempo real para mensajes
+    fun listenToMessages(
+        chatId: String,
+        onUpdate: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ): ListenerRegistration {
+        return db.collection("messages")
+            .whereEqualTo("chatId", chatId)
+            .orderBy("timestamp")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    onError(error.message ?: "Error escuchando mensajes")
+                    return@addSnapshotListener
+                }
+                val messages = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+                onUpdate(messages)
+            }
+    }
 }
-

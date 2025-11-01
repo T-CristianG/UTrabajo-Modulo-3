@@ -312,7 +312,26 @@
     <string name="verifycode_length_error">El código debe tener 5 dígitos</string>
     <string name="verifycode_expire_note">Tenga en cuenta que el código tiene una duración de 2 minutos. En caso de necesitar otro código, haga clic en Reenviar código.</string>
 
+    <!-- Strings para Chat y Postulaciones -->
+    <string name="chat_list_title">Mis Chats</string>
+    <string name="chat_list_subtitle">Conversaciones con empleadores</string>
+    <string name="chat_list_empty">No tienes chats activos</string>
+    <string name="chat_list_empty_subtitle">Aplica a empleos para empezar a chatear</string>
 
+    <string name="chat_detail_input_placeholder">Escribe un mensaje...</string>
+    <string name="chat_detail_back">Volver</string>
+
+    <string name="applications_title">Mis Postulaciones</string>
+    <string name="applications_subtitle">Empleos a los que has aplicado</string>
+    <string name="applications_empty">No has aplicado a ningún empleo</string>
+    <string name="applications_empty_subtitle">Encuentra empleos y aplica para empezar</string>
+    <string name="applications_button_chat">Abrir Chat</string>
+    <string name="applications_button_cancel">Cancelar Postulación</string>
+
+    <string name="apply_button">Aplicar</string>
+    <string name="application_success">Postulación enviada</string>
+    <string name="application_error">Error al aplicar</string>
+    <string name="cancel_success">Postulación cancelada</string>
 
 
 
