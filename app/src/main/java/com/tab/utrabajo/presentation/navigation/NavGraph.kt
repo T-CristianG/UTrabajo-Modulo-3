@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.tab.utrabajo.presentation.screens.ApplicationsScreen
 import com.tab.utrabajo.presentation.screens.ChatDetailScreen
 import com.tab.utrabajo.presentation.screens.ChatListScreen
@@ -104,8 +105,17 @@ fun NavGraph() {
             composable("create_job") { CreateJobScreen(navController) }
             composable("job_created") { JobCreatedScreen(navController) }
 
-            // Chat list y detalle (solo una definición de ChatList)
-            composable(Screen.ChatList.route) { ChatListScreen(navController) }
+            // Chat list: registro de deep link para que la URI exista en el grafo.
+            composable(
+                route = Screen.ChatList.route,
+                deepLinks = listOf(
+                    navDeepLink { uriPattern = "android-app://androidx.navigation/company_chats" }
+                )
+            ) {
+                ChatListScreen(navController)
+            }
+
+            // Chat detail
             composable(
                 "${Screen.ChatDetail.route}/{chatId}",
                 arguments = listOf(navArgument("chatId") { type = NavType.StringType })
