@@ -20,10 +20,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.tab.utrabajo.FirebaseRepository
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.tab.utrabajo.R
+import com.tab.utrabajo.FirebaseRepository
 import com.tab.utrabajo.presentation.navigation.Screen
-import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
+
 
 @Composable
 fun ChatListScreen(navController: NavHostController) {
@@ -32,7 +37,6 @@ fun ChatListScreen(navController: NavHostController) {
     var chats by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // Recursos de strings - AGREGAR IMPORTACIÓN ARRIBA
     val perfilLabel = stringResource(R.string.bottom_perfil_label)
     val perfilDesc = stringResource(R.string.bottom_perfil_desc)
     val chatLabel = stringResource(R.string.bottom_chat_label)
@@ -44,24 +48,113 @@ fun ChatListScreen(navController: NavHostController) {
     val empleoLabel = stringResource(R.string.bottom_empleo_label)
     val empleoDesc = stringResource(R.string.bottom_empleo_desc)
 
-    LaunchedEffect(Unit) {
-        if (currentUser != null) {
-            firebaseRepo.getChatsForUser(
-                userId = currentUser.uid,
-                userType = "student",
-                onSuccess = { chatsList ->
-                    chats = chatsList
-                    isLoading = false
-                },
-                onError = {
-                    chats = emptyList()
-                    isLoading = false
-                }
-            )
-        } else {
+    val db = FirebaseFirestore.getInstance()
+    var listenerStudent by remember { mutableStateOf<ListenerRegistration?>(null) }
+    var listenerCompany by remember { mutableStateOf<ListenerRegistration?>(null) }
+    var listenerParticipants by remember { mutableStateOf<ListenerRegistration?>(null) }
+
+
+    fun timeMillisOf(chat: Map<String, Any>): Long {
+        val t = (chat["lastMessageTime"] as? Timestamp) ?: (chat["createdAt"] as? Timestamp)
+        return t?.toDate()?.time ?: 0L
+    }
+
+    fun normalizeAndSort(list: List<Map<String, Any>>): List<Map<String, Any>> {
+        val distinct = list.distinctBy { it["id"]?.toString() ?: UUID.randomUUID().toString() }
+        return distinct.sortedByDescending { timeMillisOf(it) }
+    }
+
+
+    var studentList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var companyList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var participantsList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+
+    fun updateCombined() {
+
+        val merged = normalizeAndSort(studentList + companyList + participantsList)
+        chats = merged
+        isLoading = false
+    }
+
+
+    LaunchedEffect(currentUser?.uid) {
+        isLoading = true
+
+
+        listenerStudent?.remove(); listenerStudent = null
+        listenerCompany?.remove(); listenerCompany = null
+        listenerParticipants?.remove(); listenerParticipants = null
+
+        val uid = currentUser?.uid
+        if (uid == null) {
+            chats = emptyList()
             isLoading = false
+            return@LaunchedEffect
+        }
+
+        //  chat donde studentId == uid
+        listenerStudent = db.collection("chats")
+            .whereEqualTo("studentId", uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+
+                    println("ChatListScreen: error student query -> $error")
+                } else if (snapshot != null) {
+                    studentList = snapshot.documents.mapNotNull { doc ->
+                        val data = doc.data ?: return@mapNotNull null
+                        val withId = HashMap<String, Any>(data)
+                        withId["id"] = doc.id
+                        withId
+                    }
+                    updateCombined()
+                }
+            }
+
+        // chat donde companyId == uid
+        listenerCompany = db.collection("chats")
+            .whereEqualTo("companyId", uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    println("ChatListScreen: error company query -> $error")
+                } else if (snapshot != null) {
+                    companyList = snapshot.documents.mapNotNull { doc ->
+                        val data = doc.data ?: return@mapNotNull null
+                        val withId = HashMap<String, Any>(data)
+                        withId["id"] = doc.id
+                        withId
+                    }
+                    updateCombined()
+                }
+            }
+
+        // 3) chat donde participants array contains uid
+        listenerParticipants = db.collection("chats")
+            .whereArrayContains("participants", uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    println("ChatListScreen: error participants query -> $error")
+                } else if (snapshot != null) {
+                    participantsList = snapshot.documents.mapNotNull { doc ->
+                        val data = doc.data ?: return@mapNotNull null
+                        val withId = HashMap<String, Any>(data)
+                        withId["id"] = doc.id
+                        withId
+                    }
+                    updateCombined()
+                }
+            }
+
+
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            listenerStudent?.remove()
+            listenerCompany?.remove()
+            listenerParticipants?.remove()
         }
     }
+
 
     Scaffold(
         bottomBar = {
@@ -77,12 +170,7 @@ fun ChatListScreen(navController: NavHostController) {
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = {
-                        Text(
-                            perfilLabel,
-                            fontSize = 12.sp
-                        )
-                    },
+                    label = { Text(perfilLabel, fontSize = 12.sp) },
                     selected = false,
                     onClick = { navController.navigate(Screen.Profile.route) }
                 )
@@ -95,14 +183,9 @@ fun ChatListScreen(navController: NavHostController) {
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = {
-                        Text(
-                            chatLabel,
-                            fontSize = 12.sp
-                        )
-                    },
+                    label = { Text(chatLabel, fontSize = 12.sp) },
                     selected = true,
-                    onClick = { }
+                    onClick = { /* ya estamos aquí */ }
                 )
 
                 NavigationBarItem(
@@ -113,12 +196,7 @@ fun ChatListScreen(navController: NavHostController) {
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = {
-                        Text(
-                            homeLabel,
-                            fontSize = 12.sp
-                        )
-                    },
+                    label = { Text(homeLabel, fontSize = 12.sp) },
                     selected = false,
                     onClick = {
                         navController.navigate(Screen.JobsList.route) {
@@ -135,12 +213,7 @@ fun ChatListScreen(navController: NavHostController) {
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = {
-                        Text(
-                            notificationsLabel,
-                            fontSize = 12.sp
-                        )
-                    },
+                    label = { Text(notificationsLabel, fontSize = 12.sp) },
                     selected = false,
                     onClick = { /* TODO: Notificaciones */ }
                 )
@@ -153,16 +226,9 @@ fun ChatListScreen(navController: NavHostController) {
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = {
-                        Text(
-                            empleoLabel,
-                            fontSize = 12.sp
-                        )
-                    },
+                    label = { Text(empleoLabel, fontSize = 12.sp) },
                     selected = false,
-                    onClick = {
-                        navController.navigate("applications_screen")
-                    }
+                    onClick = { navController.navigate("applications_screen") }
                 )
             }
         }
@@ -173,7 +239,7 @@ fun ChatListScreen(navController: NavHostController) {
                 .padding(innerPadding)
                 .background(color = Color(0xFFE9F3F8))
         ) {
-            // Header
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -197,58 +263,62 @@ fun ChatListScreen(navController: NavHostController) {
                 )
             }
 
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Color(0xFF2B7BBF))
-                }
-            } else if (chats.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = stringResource(R.string.chat_list_empty),
-                            modifier = Modifier.size(64.dp),
-                            tint = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(R.string.chat_list_empty),
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
-                        Text(
-                            text = stringResource(R.string.chat_list_empty_subtitle),
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color(0xFF2B7BBF))
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
-                ) {
-                    items(items = chats, key = { it["id"].toString() }) { chat ->
-                        ChatListItem(
-                            chat = chat,
-                            onClick = {
-                                val chatId = chat["id"].toString()
-                                navController.navigate("${Screen.ChatDetail.route}/$chatId")
-                            }
-                        )
+                chats.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Chat,
+                                contentDescription = stringResource(R.string.chat_list_empty),
+                                modifier = Modifier.size(64.dp),
+                                tint = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = stringResource(R.string.chat_list_empty),
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            )
+                            Text(
+                                text = stringResource(R.string.chat_list_empty_subtitle),
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 24.dp)
+                    ) {
+                        items(items = chats, key = { it["id"].toString() }) { chat ->
+                            ChatListItem(
+                                chat = chat,
+                                onClick = {
+                                    val chatId = chat["id"].toString()
+                                    navController.navigate("${Screen.ChatDetail.route}/$chatId")
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -263,15 +333,12 @@ private fun ChatListItem(
 ) {
     val jobTitle = chat["jobTitle"]?.toString() ?: "Empleo"
     val lastMessage = chat["lastMessage"]?.toString() ?: "No hay mensajes"
-    val lastMessageTime = chat["lastMessageTime"] as? com.google.firebase.Timestamp
 
-    // Formatear la hora del último mensaje
-    val timeText = if (lastMessageTime != null) {
-        val date = lastMessageTime.toDate()
-        "${date.hours}:${date.minutes.toString().padStart(2, '0')}"
-    } else {
-        ""
-    }
+    val ts = (chat["lastMessageTime"] as? Timestamp) ?: (chat["createdAt"] as? Timestamp)
+    val timeText = ts?.toDate()?.let {
+        val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+        fmt.format(it)
+    } ?: ""
 
     Card(
         modifier = Modifier
@@ -287,7 +354,6 @@ private fun ChatListItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(50.dp)
@@ -304,7 +370,6 @@ private fun ChatListItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Contenido
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -324,7 +389,6 @@ private fun ChatListItem(
                 )
             }
 
-            // Tiempo
             Text(
                 text = timeText,
                 fontSize = 12.sp,
