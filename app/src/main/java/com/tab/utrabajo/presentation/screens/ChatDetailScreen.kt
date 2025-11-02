@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
 import com.tab.utrabajo.FirebaseRepository
 import com.tab.utrabajo.R
@@ -32,15 +33,23 @@ import java.util.*
 fun ChatDetailScreen(navController: NavHostController, chatId: String?) {
     val firebaseRepo = remember { FirebaseRepository.getInstance() }
     val currentUser = firebaseRepo.getCurrentUser()
+
+    // mensajes reales
     var messages by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    // mensajes locales pendientes de confirmación por el servidor
+    val pendingMessages = remember { mutableStateListOf<Map<String, Any>>() }
+
     var newMessage by remember { mutableStateOf("") }
     var chatInfo by remember { mutableStateOf<Map<String, Any>?>(null) }
     val scrollState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
+    // Carga info del chat
+    var messagesListener by remember { mutableStateOf<ListenerRegistration?>(null) }
+
     LaunchedEffect(chatId) {
         if (chatId != null) {
-            // Cargar informacion del chat usando la funcion del repositorio
+            // Cargar informacion del chat
             firebaseRepo.getChatsForUser(
                 userId = currentUser?.uid ?: "",
                 userType = "student",
@@ -48,22 +57,82 @@ fun ChatDetailScreen(navController: NavHostController, chatId: String?) {
                     val currentChat = chats.find { it["id"] == chatId }
                     chatInfo = currentChat
                 },
-                onError = { }
+                onError = { /* ignore */ }
             )
 
-            // Configurar listener en tiempo real para mensajes
-            firebaseRepo.listenToMessages(
+            messagesListener = firebaseRepo.listenToMessages(
                 chatId = chatId,
                 onUpdate = { newMessages ->
-                    messages = newMessages
+
+                    val server = newMessages.toMutableList()
+
+                    val toRemove = mutableListOf<Map<String, Any>>()
+                    pendingMessages.forEach { pending ->
+                        val pendingMsg = pending["message"]?.toString() ?: ""
+                        val pendingSender = pending["senderId"]?.toString() ?: ""
+                        val pendingId = pending["id"]?.toString() ?: ""
+                        val match = server.any { srv ->
+                            val srvId = srv["id"]?.toString() ?: ""
+                            val srvMsg = srv["message"]?.toString() ?: ""
+                            val srvSender = srv["senderId"]?.toString() ?: ""
+                            if (srvId.isNotBlank() && srvId == pendingId) return@any true
+                            if (srvMsg == pendingMsg && srvSender == pendingSender) {
+                                val srvTs = srv["timestamp"]
+                                val pendTs = pending["timestamp"]
+                                try {
+                                    val srvMillis = when (srvTs) {
+                                        is Timestamp -> srvTs.toDate().time
+                                        is Long -> srvTs
+                                        is Number -> srvTs.toLong()
+                                        else -> null
+                                    }
+                                    val pendMillis = when (pendTs) {
+                                        is Timestamp -> pendTs.toDate().time
+                                        is Long -> pendTs
+                                        is Number -> pendTs.toLong()
+                                        else -> null
+                                    }
+                                    if (srvMillis != null && pendMillis != null) {
+
+                                        return@any kotlin.math.abs(srvMillis - pendMillis) <= 5000
+                                    }
+                                } catch (_: Exception) { }
+                                return@any true
+                            }
+                            false
+                        }
+
+                        if (match) toRemove.add(pending)
+                    }
+
+                    toRemove.forEach { pendingMessages.remove(it) }
+
+                    val merged = server.toMutableList()
+                    pendingMessages.forEach { pending ->
+                        val existsOnServer = server.any { srv ->
+                            val srvMsg = srv["message"]?.toString() ?: ""
+                            val srvSender = srv["senderId"]?.toString() ?: ""
+                            srvMsg == pending["message"]?.toString() && srvSender == pending["senderId"]?.toString()
+                        }
+                        if (!existsOnServer) merged.add(pending)
+                    }
+
+                    messages = merged
+
                     coroutineScope.launch {
-                        if (newMessages.isNotEmpty()) {
-                            scrollState.animateScrollToItem(newMessages.size - 1)
+                        if (messages.isNotEmpty()) {
+                            scrollState.animateScrollToItem(messages.size - 1)
                         }
                     }
                 },
-                onError = { }
+                onError = { /* ignore */ }
             )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            try { messagesListener?.remove() } catch (_: Exception) {}
         }
     }
 
@@ -134,14 +203,33 @@ fun ChatDetailScreen(navController: NavHostController, chatId: String?) {
                 IconButton(
                     onClick = {
                         if (newMessage.isNotBlank() && chatId != null && currentUser != null) {
+                            val textToSend = newMessage.trim()
+                            val tempId = "local-${UUID.randomUUID()}"
+                            val nowTs = Timestamp.now()
+                            val pending = mapOf<String, Any>(
+                                "id" to tempId,
+                                "message" to textToSend,
+                                "senderId" to currentUser.uid,
+                                "timestamp" to nowTs
+                            )
+                            pendingMessages.add(pending)
+                            messages = messages + pending
+
+                            newMessage = ""
+
+                            coroutineScope.launch {
+                                scrollState.animateScrollToItem(messages.size - 1)
+                            }
+
                             firebaseRepo.sendMessage(
                                 chatId = chatId,
                                 senderId = currentUser.uid,
-                                messageText = newMessage,
+                                messageText = textToSend,
                                 onSuccess = {
-                                    newMessage = ""
                                 },
-                                onError = { }
+                                onError = {
+
+                                }
                             )
                         }
                     },
@@ -166,7 +254,14 @@ private fun MessageBubble(
     isOwnMessage: Boolean
 ) {
     val messageText = message["message"]?.toString() ?: ""
-    val timestamp = message["timestamp"] as? com.google.firebase.Timestamp
+    val timestampAny = message["timestamp"]
+    val timestamp = when (timestampAny) {
+        is Timestamp -> timestampAny
+        is com.google.firebase.Timestamp -> timestampAny
+        is Long -> Timestamp(timestampAny / 1000, ((timestampAny % 1000) * 1000).toInt())
+        is Number -> Timestamp(timestampAny.toLong() / 1000, 0)
+        else -> null
+    }
 
     val timeText = if (timestamp != null) {
         val date = timestamp.toDate()
