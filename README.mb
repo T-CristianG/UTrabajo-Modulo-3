@@ -1,0 +1,45 @@
+# 📱 UTrabajo - Aplicación Móvil
+
+**UTrabajo** es una aplicación desarrollada en **Kotlin** con **Jetpack Compose**, diseñada para conectar **estudiantes** con **empleadores** en Colombia.  
+Permite publicar ofertas laborales, aplicar a ellas y comunicarse mediante un chat integrado.
+
+---
+
+## 🚀 Tecnologías Utilizadas
+
+- **Kotlin** – Lenguaje principal de desarrollo.
+- **Jetpack Compose** – Para la construcción de interfaces modernas y responsivas.
+- **Firebase** – Manejo de autenticación, base de datos en tiempo real y almacenamiento.
+- **Android Studio** – Entorno de desarrollo.
+- **Tailwind CSS (en diseño web complementario)** – Para estilos responsivos en el frontend web.
+
+---
+
+## ⚙️ Funcionalidades Principales
+
+- 🔐 **Registro e inicio de sesión** de estudiantes y empleadores.  
+- 💼 **Publicación de ofertas laborales** por parte de los empleadores.  
+- 📋 **Aplicación a ofertas** por parte de los estudiantes.  
+- 💬 **Chat en tiempo real** entre estudiante y empleador.  
+- 🧭 **Navegación intuitiva** mediante Jetpack Compose.  
+
+---
+
+## 🛠️ Instalación y Ejecución
+
+1. Clona el repositorio:
+   ```bash
+   git clone https://github.com/T-CristianG/UTrabajo-aplicacion.git
+
+
+Abre Android Studio.
+
+En la pantalla inicial, selecciona “Open” y abre el directorio del proyecto que acabas de clonar (UTrabajo-aplicacion).
+
+Espera a que Gradle sincronice automáticamente todas las dependencias.
+Si no lo hace, usa el menú:
+File → Sync Project with Gradle Files.
+
+Conecta un emulador o un dispositivo físico Android.
+
+Haz clic en Run ▶️ para ejecutar la aplicación.
